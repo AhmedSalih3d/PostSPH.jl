@@ -37,3 +37,9 @@ Realistic ideas for the future:
 1. Develop algorithm to give a number describing particle spacing ie. has the simulation coarsened over time or kept uniform
 1. Implement a version of DualSPHysics own tools for post-processing in Julia ie. velocity measurement, surface elevation etc.
 
+# Credits
+
+Version 0.0 has been developed by;
+
+* Ahmed Salih (AhmedSalih3d) - Idea instigator, user of DualSPHysics for about a year, primary maintainer  of code now
+* Saif Salih (Sayfsal) - Developer of initial custom .vtk reader
