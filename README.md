@@ -14,7 +14,7 @@ Pkg.add("PostSPH")
 After installation the new function which is provided is:
 
 ```julia
-readVtkArray(filename::Array{String,1},cat::Enum)
+PostSPH.readVtkArray(filename::Array{String,1},cat::Enum)
 ```
 
 * Example:
@@ -25,7 +25,8 @@ using PostSPH #Write this once in terminal or script file, to use function in Po
 #Move to correct folder
 cd(raw"..\DualSPHysics_v4.4\examples\main\03_MovingSquare\CaseMovingSquare_out\particles")
 #Extracts all velocity data from all .vtk files and stores in array
-velSquare = readVtkArray("PartSquare",Vel)
+#Second argument is velocity, clear a few lines further down
+velSquare = PostSPH.readVtkArray("PartSquare",PostSPH.Cat(2)) 
 ```
 
 To access data do, ```velSquare[1]``` to get vel data from "PartSquare_0000.vtk" and etc. Do ```velSquare[1][:,1]``` to get all x-components, 2 for y-components and 3 for z-components of velocity. 
@@ -34,18 +35,34 @@ The first argument, "filename", takes a string and searches for all similar stri
 
 
 ```julia
-velSquare = readVtkArray("PartSquare_0000.vtk",Vel)
+velSquare = PostSPH.readVtkArray("PartSquare_0000.vtk",PostSPH.Cat(2))
 ```
 
 Ie. provide full file name. All hard-coded properties are able to be extracted with the use of this function. The second argument "cat", can therefore be:
 
-Points,Idp,Vel,Rhop,Mass,Press,Vol,Ace,Vor,Typ and Mk
+Points,Idp,Vel,Rhop,Mass,Press,Vol,Ace,Vor,Typ and Mk, which each have assigned an integer, which can be found using the command:
 
-Note, "Type" is "Typ" due to Julia restriction.
+```julia
+PostSPH.Cat
+Enum PostSPH.Cat:
+Points = 0
+Idp = 1
+Vel = 2
+Rhop = 3
+Mass = 4
+Press = 5
+Vol = 6
+Ace = 7
+Vor = 8
+Typ = 9
+Mk = 10
+```
+
+Note it is possible to define ``` Idp = PostSPH.Cat(0) ``` etc. if it is needed to increase readability.
 
 # Performance Tip
 
-Due to the way Julia functions, it will recompile a function if input/output changes. A basic example would be running a function with a "Float32" and then a "Float64" input. If the input type is hardcoded Julia will under the hood recompile a type specific version for each input type. Therefore, as an user, if you experience slow initial performance, when trying to load a new variable, try in the first run only to read one file, ie. ```velSquare = readVtkArray("PartSquare_0000.vtk",Vel)``` and then afterwards read all files, by using only "PartSquare". 
+Due to the way Julia functions, it will recompile a function if input/output changes. A basic example would be running a function with a "Float32" and then a "Float64" input. If the input type is hardcoded Julia will under the hood recompile a type specific version for each input type. Therefore, as an user, if you experience slow initial performance, when trying to load a new variable, try in the first run only to read one file, ie. ```velSquare = PostSPH.readVtkArray("PartSquare_0000.vtk",Vel)``` and then afterwards read all files, by using only "PartSquare". 
 
 # Current Implementation (Version 0.0)
 
