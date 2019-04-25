@@ -21,9 +21,11 @@ readVtkArray(filename::Array{String,1},cat::Enum)
 Go run the MovingSquare example in DualSPHysics (..\DualSPHysics_v4.4\examples\main\03_MovingSquare) and then from Julia navigate to the directory in which the .vtk files are stored. An example would be:
 
 ```julia
-using PostSPH #Write this once in terminal or script file
-cd(raw"..\DualSPHysics_v4.4\examples\main\03_MovingSquare\CaseMovingSquare_out\particles") #Move to correct folder
-velSquare = readVtkArray("PartSquare",Vel) #Extracts all velocity data from all .vtk files and stores in array
+using PostSPH #Write this once in terminal or script file, to use function in PostSPH.jl
+#Move to correct folder
+cd(raw"..\DualSPHysics_v4.4\examples\main\03_MovingSquare\CaseMovingSquare_out\particles")
+#Extracts all velocity data from all .vtk files and stores in array
+velSquare = readVtkArray("PartSquare",Vel)
 ```
 
 To access data do, ```velSquare[1]``` to get vel data from "PartSquare_0000.vtk" and etc. Do ```velSquare[1][:,1]``` to get all x-components, 2 for y-components and 3 for z-components of velocity. 
