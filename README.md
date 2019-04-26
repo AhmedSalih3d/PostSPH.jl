@@ -5,15 +5,15 @@ Easing the process of post-processing simulations done in DualSPHysics. Currentl
 The code has been programmed for the stable v.1.1 of Julia and currently installation is done through:
 
 ```julia
-using Pkg
-Pkg.add("PostSPH")
+] add https://github.com/AhmedSalih3d/PostSPH.jl
 ```
+Bracket, "]", is to enter "pkg" mode in Julia shell. The reason for install being this way currently is that it is an unofficial package right now. To use the package write, ```using PostSPH````.
 
 # Usage
 After installation the new function which is provided is:
 
 ```julia
-PostSPH.readVtkArray(filename::Array{String,1},Cat::Enum)
+readVtkArray(filename::Array{String,1},Cat::Enum)
 ```
 
 * Example:
