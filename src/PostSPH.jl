@@ -123,13 +123,13 @@ export
         dirFiles  = readdir()
         filenames = filter!(s->occursin(filename, s),dirFiles) #Can't use r?
         nFilenames = size(filenames)[1]
-        k = Vector{Array{catType[typ]}}(undef, nFilenames)
         PosTyp,breakPos = readVtkPos(filenames[1],typ)
         if breakPos == 1
             strMsg = @sprintf "%s was not found in .vtk file" typ
             println(strMsg)
             k = nothing
         else
+            k = Vector{Array{catType[typ]}}(undef, nFilenames)
             Threads.@threads for i = 1:nFilenames::Number
                 try
                     @inbounds k[i] = readVtk(filenames[i], typ,PosTyp)
