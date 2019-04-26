@@ -18,7 +18,7 @@ module PostSPH
         ## Make two dicts,   one for the enum -> string and one for the data type
         const searchString = Dict(Points => "POINTS ",Idp=>"POINT_DATA ",Vel=>"Vel ",Rhop=>"Rhop ",Mass=>"Mass ",Press => "Press ",Vol => "Vol ",Ace => "Ace ",Vor => "Vor ",Typ=>"Type ",Mk => "Mk ")
         const catType = Dict(Points => Float32,Idp=>Int32,Vel=>Float32,Rhop=>Float32,Mass=>Float32,Press =>Float32,Vol=>Float32,Ace=>Float32,Vor=>Float32,Typ=>Int8,Mk=>Int8)
-    #MK VIRKER IK?
+    
 
     function readVtkPos(filename::String,typ::Cat)
         fd::IOStream = open(filename, read=true)
@@ -68,8 +68,7 @@ module PostSPH
         return arrayVal
     end
 
-    #transferData function used to read file depending on type. NOTE it has to be
-    #the same as from data ie."UInt8" etc. while dict is allowed to convert it.
+    #transferData function used to read file depending on type.
 
     function transferData(fd::IOStream, arrayVal::Array{Float32,1})
         sz = size(arrayVal)
@@ -125,4 +124,4 @@ module PostSPH
 
     export readVtkArray
     export Cat
-end #module
+end #PostSPH
