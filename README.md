@@ -2,7 +2,6 @@
 Easing the process of post-processing simulations done in DualSPHysics. Currently supporting version 4.4 of DualSPHysics.
 
 # Installation
-# NOTE: Nothing is available yet, readme is just being developed
 The code has been programmed for the stable v.1.1 of Julia and currently installation is done through:
 
 ```julia
