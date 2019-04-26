@@ -1,6 +1,9 @@
 __precompile__()
 
 module PostSPH
+
+using Printf #To construct string message easily
+
 export
     readVtkArray,
     Cat,
@@ -27,13 +30,21 @@ export
     function readVtkPos(filename::String,typ::Cat)
         fd::IOStream = open(filename, read=true)
         readuntil(fd, searchString[typ])
-        if typ != Points
-            PosTyp = position(fd)-div(position(fd),20)
+
+        breakPos = 0
+        if eof(fd) == true
+            breakPos = 1
+            PosTyp   = NaN
         else
-            PosTyp = 0
+            if typ != Points
+                PosTyp   = position(fd)-div(position(fd),20)
+            else
+                PosTyp = 0
+            end
         end
-        return PosTyp
+        return PosTyp,breakPos
     end
+
     ##Read VTK and chose option
     function readVtk(filename::String, typ::Cat,PosTyp::Number)
         #Open the specific file
@@ -107,21 +118,27 @@ export
     ## Function to read multiplefiles into array
     #filename is a part of the wanted files - CASE SENSITIVE
     function readVtkArray(filename::String, typ::Cat)
+
         #Generate file names with dir command
         dirFiles  = readdir()
         filenames = filter!(s->occursin(filename, s),dirFiles) #Can't use r?
         nFilenames = size(filenames)[1]
         k = Vector{Array{catType[typ]}}(undef, nFilenames)
-        PosTyp = readVtkPos(filenames[1],typ)
-        Threads.@threads for i = 1:nFilenames::Number
-            try
-                @inbounds k[i] = readVtk(filenames[i], typ,PosTyp)
-            catch
-                #Since DualSPHysics starts from 0000 - Test
-                println("Error in file number ",i-1)
+        PosTyp,breakPos = readVtkPos(filenames[1],typ)
+        if breakPos == 1
+            strMsg = @sprintf "%s was not found in .vtk file" typ
+            println(strMsg)
+            k = nothing
+        else
+            Threads.@threads for i = 1:nFilenames::Number
+                try
+                    @inbounds k[i] = readVtk(filenames[i], typ,PosTyp)
+                catch
+                    #Since DualSPHysics starts from 0000 - Test
+                    println("Error in file number ",i-1)
+                end
             end
         end
-
         return k
     end
 
