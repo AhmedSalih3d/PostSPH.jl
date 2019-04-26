@@ -151,15 +151,18 @@ export
     function ForceVtk(filename::String)
         mass = readVtkArray(filename,Mass)
         ace  = readVtkArray(filename,Ace)
-        n = size(mass)[1]
-        ForceArray  = zeros(Float32,n,3)
-        for i = 1:n
-            @inbounds ForceArray[i,:] = sum(mass[i].*ace[i],dims=1)
-        end
-        ForceMag  = zeros(Float32,n)
-        for i = 1:n
-            @inbounds ForceMag[i] =  sqrt(ForceArray[i,1].^2+ForceArray[i,2].^2+ForceArray[i,3].^2)
-        end
+            if mass != nothing && ace != nothing
+                n = size(mass)[1]
+                ForceArray  = zeros(Float32,n,3)
+                for i = 1:n
+                    @inbounds ForceArray[i,:] = sum(mass[i].*ace[i],dims=1)
+                end
+                ForceMag  = zeros(Float32,n)
+                for i = 1:n
+                    @inbounds ForceMag[i] =  sqrt(ForceArray[i,1].^2+ForceArray[i,2].^2+ForceArray[i,3].^2)
+                end
+            else
+            end
         return ForceArray,ForceMag
     end
 end #PostSPH
