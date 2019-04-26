@@ -161,7 +161,6 @@ export
                 for i = 1:n
                     @inbounds ForceMag[i] =  sqrt(ForceArray[i,1].^2+ForceArray[i,2].^2+ForceArray[i,3].^2)
                 end
-            else
             end
         return ForceArray,ForceMag
     end
