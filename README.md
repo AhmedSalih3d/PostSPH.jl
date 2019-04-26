@@ -82,4 +82,4 @@ Realistic ideas for the future:
 Version 0.0 has been developed by;
 
 * Ahmed Salih (AhmedSalih3d) - Idea instigator, user of DualSPHysics for about a year, primary maintainer  of code now
-* Saif Salih (Sayfsal) - Developer of initial custom .vtk reader
+* Saif Salih (sayfsal) - Developer of initial custom .vtk reader
