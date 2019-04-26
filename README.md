@@ -7,7 +7,7 @@ The code has been programmed for the stable v.1.1 of Julia and currently install
 ```julia
 ] add https://github.com/AhmedSalih3d/PostSPH.jl
 ```
-Bracket, "]", is to enter "pkg" mode in Julia shell. The reason for install being this way currently is that it is an unofficial package right now. To use the package write, ```using PostSPH````.
+Bracket, "]", is to enter "pkg" mode in Julia shell. The reason for install being this way currently is that it is an unofficial package right now. To use the package write, ```using PostSPH```.
 
 # Usage
 After installation the new function which is provided is:
