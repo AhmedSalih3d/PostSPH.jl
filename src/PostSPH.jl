@@ -18,7 +18,7 @@ module PostSPH
         ## Make two dicts,   one for the enum -> string and one for the data type
         const searchString = Dict(Points => "POINTS ",Idp=>"POINT_DATA ",Vel=>"Vel ",Rhop=>"Rhop ",Mass=>"Mass ",Press => "Press ",Vol => "Vol ",Ace => "Ace ",Vor => "Vor ",Typ=>"Type ",Mk => "Mk ")
         const catType = Dict(Points => Float32,Idp=>Int32,Vel=>Float32,Rhop=>Float32,Mass=>Float32,Press =>Float32,Vol=>Float32,Ace=>Float32,Vor=>Float32,Typ=>Int8,Mk=>Int8)
-    
+
 
     function readVtkPos(filename::String,typ::Cat)
         fd::IOStream = open(filename, read=true)
@@ -113,7 +113,8 @@ module PostSPH
             try
                 @inbounds k[i] = readVtk(filenames[i], typ,PosTyp)
             catch
-                println("Error in file number ",i-1) #Since DualSPHysics start 0000
+                #Since DualSPHysics starts from 0000
+                println("Error in file number ",i-1)
             end
         end
 
