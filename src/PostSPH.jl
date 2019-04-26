@@ -113,7 +113,7 @@ module PostSPH
             try
                 @inbounds k[i] = readVtk(filenames[i], typ,PosTyp)
             catch
-                #Since DualSPHysics starts from 0000
+                #Since DualSPHysics starts from 0000 - Test
                 println("Error in file number ",i-1)
             end
         end
