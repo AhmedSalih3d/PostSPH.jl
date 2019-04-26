@@ -1,6 +1,10 @@
 __precompile__()
 
 module PostSPH
+export
+    readVtkArray,
+    Cat,
+    ForceVtk
 ##Hardcoded enum - Cat is "category"
         @enum Cat begin
             Points
@@ -121,8 +125,24 @@ module PostSPH
         return k
     end
 
-
-
-    export readVtkArray
-    export Cat
+    #These functions calculates force for either predefined arrays or filename using
+    #mass of particle times acceleration of a particle. Use SplitVtk to get x y z
+    #components and MagVtk to get magnitude of force later. Arrays have to be same
+    #size which should always be true from data files, unless mistake in datafiles
+    #x-force is given by Force = ForceVtk(filename) -->  Force[1][:,1], while
+    #ForceMag is given by Force[2]
+    function ForceVtk(filename::String)
+        mass = readVtkArray(filename,Mass)
+        ace  = readVtkArray(filename,Ace)
+        n = size(mass)[1]
+        ForceArray  = zeros(Float32,n,3)
+        for i = 1:n
+            @inbounds ForceArray[i,:] = sum(mass[i].*ace[i],dims=1)
+        end
+        ForceMag  = zeros(Float32,n)
+        for i = 1:n
+            @inbounds ForceMag[i] =  sqrt(ForceArray[i,1].^2+ForceArray[i,2].^2+ForceArray[i,3].^2)
+        end
+        return ForceArray,ForceMag
+    end
 end #PostSPH
