@@ -64,7 +64,7 @@ Note it is possible to define ``` Idp = Cat(0) ``` etc. if it is needed to incre
 
 Due to the way Julia functions, it will recompile a function if input/output changes. A basic example would be running a function with a "Float32" and then a "Float64" input. If the input type is hardcoded Julia will under the hood recompile a type specific version for each input type. Therefore, as an user, if you experience slow initial performance, when trying to load a new variable, try in the first run only to read one file, ie. ```velSquare = readVtkArray("PartSquare_0000.vtk",Cat(2))``` and then afterwards read all files, by using only "PartSquare". 
 
-# Current Implementation (Version 0.0)
+# Current Implementation (Version 0.1.0)
 
 Currently it is possible to:
 1. Read single or all .vtk files existing in a directory, matching a string ie. "PartSquare".
