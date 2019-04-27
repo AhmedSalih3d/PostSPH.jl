@@ -7,6 +7,7 @@ using Printf #To construct string message easily
 export
     readVtkArray,
     Cat,
+    readVtkParticles,
     ForceVtk
 ##Hardcoded enum - Cat is "category"
         @enum Cat begin
