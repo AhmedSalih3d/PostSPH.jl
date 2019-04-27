@@ -53,11 +53,11 @@ export
         seek(fd,PosTyp)
         readuntil(fd, searchString[typ])
         #State number of colums depending on binary vtk file
-        nCol::UInt = if ( typ == Points ) 3 elseif (typ == Idp) 1 else parse(UInt,readuntil(fd,' ')) end
+        nCol::Int = if ( typ == Points ) 3 elseif (typ == Idp) 1 else parse(Int,readuntil(fd,' ')) end
         #Do something if special case?
         speCase::Bool = typ == Idp
         char = (speCase) ? '\n' : ' '
-        nRow::UInt = parse(UInt,readuntil(fd,char))
+        nRow::Int = parse(Int,readuntil(fd,char))
 
         if ( speCase)
             readuntil(fd,'\n')
@@ -118,7 +118,6 @@ export
     ## Function to read multiplefiles into array
     #filename is a part of the wanted files - CASE SENSITIVE
     function readVtkArray(filename::String, typ::Cat)
-
         #Generate file names with dir command
         dirFiles  = readdir()
         filenames = filter!(s->occursin(filename, s),dirFiles) #Can't use r?
@@ -136,9 +135,37 @@ export
                 catch
                     #Since DualSPHysics starts from 0000 - Test
                     println("Error in file number ",i-1)
+                    @inbounds k[i] = NaN
                 end
             end
         end
+        return k
+    end
+
+###########################Extra Functionality#################################
+    #Purpose is to only read number of particles in a simulation step. This
+    #automatically uses "typ" = Points, since Points will always exist. It also
+    #starts from PosTyp = 0, so this argument is not relevant anymore
+    function GetParticles(filename::String)
+        typ = Points
+        fd::IOStream = open(filename, read=true)
+        #Read until the specific enum string has been found. Ie. Mk => "Mk " etc.
+        readuntil(fd, searchString[typ])
+        #State number of colums depending on binary vtk file
+        nRow::Int = parse(Int,readuntil(fd,' '))
+        return nRow
+    end
+
+    ## Read number of particles through each simulation step in Int64 Array
+    function readVtkParticles(filename::String)
+        #Generate file names with dir command
+        dirFiles  = readdir()
+        filenames = filter!(s->occursin(filename, s),dirFiles) #Can't use r?
+        nFilenames = size(filenames)[1]
+        k = Array{Int64}(undef, nFilenames)
+Threads.@threads for i = 1:nFilenames::Number
+                    @inbounds k[i] = GetParticles(filenames[i])
+                 end
         return k
     end
 
@@ -148,6 +175,8 @@ export
     #size which should always be true from data files, unless mistake in datafiles
     #x-force is given by Force = ForceVtk(filename) -->  Force[1][:,1], while
     #ForceMag is given by Force[2]
+    #Currently a bug exists which makes it so, if there is an error in one file
+    #the whole terminal might crash..
     function ForceVtk(filename::String)
         mass = readVtkArray(filename,Mass)
         ace  = readVtkArray(filename,Ace)
