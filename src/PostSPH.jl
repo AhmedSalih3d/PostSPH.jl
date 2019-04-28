@@ -28,7 +28,7 @@ export
         const catType = Dict(Points => Float32,Idp=>Int32,Vel=>Float32,Rhop=>Float32,Mass=>Float32,Press =>Float32,Vol=>Float32,Ace=>Float32,Vor=>Float32,Typ=>Int8,Mk=>Int8)
 
 
-    function readVtkPos(filename::String,typ::Cat)
+    function _readVtkPos(filename::String,typ::Cat)
         fd::IOStream = open(filename, read=true)
         readuntil(fd, searchString[typ])
 
@@ -47,7 +47,7 @@ export
     end
 
     ##Read VTK and chose option
-    function readVtk(filename::String, typ::Cat,PosTyp::Number)
+    function _readVtk(filename::String, typ::Cat,PosTyp::Number)
         #Open the specific file
         fd::IOStream = open(filename, read=true)
         #Read until the specific enum string has been found. Ie. Mk => "Mk " etc.
@@ -77,23 +77,23 @@ export
         #arrayVal::Array{catType[typ],dim} = zeros(catType[typ],size)
         arrayVal::Array{catType[typ],dim} = Array{catType[typ],dim}(undef, size)
 
-        transferData(fd, arrayVal)
+        _transferData(fd, arrayVal)
 
         #Close the open file
         close(fd)
         return arrayVal
     end
 
-    #transferData function used to read file depending on type.
+    #_transferData function used to read file depending on type.
 
-    function transferData(fd::IOStream, arrayVal::Array{Float32,1})
+    function _transferData(fd::IOStream, arrayVal::Array{Float32,1})
         sz = size(arrayVal)
         for i = 1:sz[1]::Number
             @inbounds arrayVal[i] = ntoh(read(fd, Float32))
         end
     end
 
-    function transferData(fd::IOStream, arrayVal::Array{Float32,2})
+    function _transferData(fd::IOStream, arrayVal::Array{Float32,2})
         sz = size(arrayVal)
         @inbounds for i = 1:sz[1]::Number
             @inbounds for k = 1:sz[2]::Number
@@ -102,14 +102,14 @@ export
                   end
     end
 
-    function transferData(fd::IOStream, arrayVal::Array{Int32,1})
+    function _transferData(fd::IOStream, arrayVal::Array{Int32,1})
         sz = size(arrayVal)
         for i = 1:sz[1]::Number
             @inbounds arrayVal[i] = ntoh(read(fd, Int32))
         end
     end
 
-    function transferData(fd::IOStream, arrayVal::Array{Int8,1})
+    function _transferData(fd::IOStream, arrayVal::Array{Int8,1})
         sz = size(arrayVal)
         for i = 1:sz[1]::Number
             @inbounds arrayVal[i] = read(fd, Int8)
@@ -123,7 +123,7 @@ export
         dirFiles  = readdir()
         filenames = filter!(s->occursin(filename, s),dirFiles) #Can't use r?
         nFilenames = size(filenames)[1]
-        PosTyp,breakPos = readVtkPos(filenames[1],typ)
+        PosTyp,breakPos = _readVtkPos(filenames[1],typ)
         if breakPos == 1
             strMsg = @sprintf "%s was not found in .vtk file" typ
             println(strMsg)
@@ -132,7 +132,7 @@ export
             k = Vector{Array{catType[typ]}}(undef, nFilenames)
             Threads.@threads for i = 1:nFilenames::Number
                 try
-                    @inbounds k[i] = readVtk(filenames[i], typ,PosTyp)
+                    @inbounds k[i] = _readVtk(filenames[i], typ,PosTyp)
                 catch
                     #Since DualSPHysics starts from 0000 - Test
                     println("Error in file number ",i-1)
@@ -147,7 +147,7 @@ export
     #Purpose is to only read number of particles in a simulation step. This
     #automatically uses "typ" = Points, since Points will always exist. It also
     #starts from PosTyp = 0, so this argument is not relevant anymore
-    function GetParticles(filename::String)
+    function _GetParticles(filename::String)
         typ = Points
         fd::IOStream = open(filename, read=true)
         #Read until the specific enum string has been found. Ie. Mk => "Mk " etc.
@@ -165,7 +165,7 @@ export
         nFilenames = size(filenames)[1]
         k = Array{Int64}(undef, nFilenames)
 Threads.@threads for i = 1:nFilenames::Number
-                    @inbounds k[i] = GetParticles(filenames[i])
+                    @inbounds k[i] = _GetParticles(filenames[i])
                  end
         return k
     end

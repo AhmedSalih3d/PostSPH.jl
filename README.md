@@ -76,6 +76,12 @@ Mk = 10
 
 Note it is possible to define ``` Idp = Cat(0) ``` etc. if it is needed to increase readability.
 
+# Subfunctions in this package
+
+To make this module easier to maintain functionality has been split into subfunctions
+which the main functions utilize. Every function preprended with a underscore, ' _ ' is not meant
+to be used by the user.
+
 # Performance Tip
 
 Due to the way Julia functions, it will recompile a function if input/output changes. A basic example would be running a function with a "Float32" and then a "Float64" input. If the input type is hardcoded Julia will under the hood recompile a type specific version for each input type. Therefore, as an user, if you experience slow initial performance, when trying to load a new variable, try in the first run only to read one file, ie. ```velSquare = readVtkArray("PartSquare_0000.vtk",Cat(2))``` and then afterwards read all files, by using only "PartSquare". This also applies to readVtkParticles.
@@ -96,7 +102,7 @@ Realistic ideas for the future:
 
 # Credits
 
-Version 0.0 has been developed by;
+Version 0.1.2 has been developed by;
 
 * Ahmed Salih (AhmedSalih3d) - Idea instigator, user of DualSPHysics for about a year, primary maintainer  of code now
 * Saif Salih (sayfsal) - Developer of initial custom .vtk reader
