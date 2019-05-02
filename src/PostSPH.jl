@@ -198,3 +198,26 @@ Threads.@threads for i = 1:nFilenames::Number
         return ForceArray,ForceMag
     end
 end #PostSPH
+
+###############################KERNELS##########################################
+h  = convert(Float32,0.002449) #m, smoothing length for PartFinal, River1
+x  = convert(Float32,0.2)
+#\alphaD from Runout file
+αD = 92833.429688 #7/(4*pi*(h/2)^2) #Wendland Quintic 2D
+#Abs since a particle on both sides of x should be counted in bool later
+q(ra::Float32,rb::Array{Float32,1},h::Float32) = abs.(ra.-rb)/h
+#Wendland kernel as in Periodicity
+W(q) =  αD*(1 .- q/2).^4 .* (2 .* q .+ 1)
+#Reading points data for particles and velocity
+pos = readVtkArray("PartFluid_",PostSPH.Points)
+vel = readVtkArray("PartFluid_",PostSPH.Vel)
+#Initializing x-velocity array, Vab
+Vab = []
+for i = 1:length(pos)
+    qab = q(x,pos[i][:,1],h)
+    #Bool is to ensure on values between 0 and 2 are taken into account
+    bool = convert(Array{Int},0 .< qab .< 2)
+    qabF = q(x,pos[i][:,1],h).*bool
+    Wab = W(qabF)
+    push!(Vab,sum(Wab.*vel[i][:,1])/sum(Wab))
+end
