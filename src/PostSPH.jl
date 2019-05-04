@@ -170,6 +170,21 @@ Threads.@threads for i = 1:nFilenames::Number
         return k
     end
 
+    #Function which returns an array of mass of each single time step
+    function MassVtk(filename::String)
+        mass = readVtkArray(filename,Mass)
+            if mass == nothing
+                MassArray = nothing
+            else
+                n = size(mass)[1]
+                MassArray  = Array{Float32,1}(undef,n)
+                for i = 1:n
+                    @inbounds MassArray[i] = sum(mass[i])
+                end
+            end
+        return MassArray
+    end
+
     #These functions calculates force for either predefined arrays or filename using
     #mass of particle times acceleration of a particle. Use SplitVtk to get x y z
     #components and MagVtk to get magnitude of force later. Arrays have to be same
@@ -197,6 +212,7 @@ Threads.@threads for i = 1:nFilenames::Number
             end
         return ForceArray,ForceMag
     end
+
 end #PostSPH
 
 ###############################KERNELS##########################################
