@@ -51,7 +51,9 @@ The first argument, "filename", takes a string and searches for all similar stri
 
 
 ```julia
+#Different ways to write the same thing
 velSquare = readVtkArray("PartSquare_0000.vtk",Cat(2))
+velSquare = readVtkArray("PartSquare_0000.vtk",PostSPH.Vel)
 ```
 
 Ie. provide full file name. All hard-coded properties are able to be extracted with the use of this function. The second argument "Cat", can therefore be:
@@ -86,23 +88,25 @@ to be used by the user.
 
 Due to the way Julia functions, it will recompile a function if input/output changes. A basic example would be running a function with a "Float32" and then a "Float64" input. If the input type is hardcoded Julia will under the hood recompile a type specific version for each input type. Therefore, as an user, if you experience slow initial performance, when trying to load a new variable, try in the first run only to read one file, ie. ```velSquare = readVtkArray("PartSquare_0000.vtk",Cat(2))``` and then afterwards read all files, by using only "PartSquare". This also applies to readVtkParticles.
 
-# Current Implementation (Version 0.1.1)
+# Current Implementation (Version 0.1.3)
 
 Currently it is possible to:
-1. Read single or all .vtk files existing in a directory, matching a string ie. "PartSquare".
-2. Extract number of particles in each simulation step, matching a string ie. "PartSquare"
+1. Read single or all .vtk files existing in a directory, matching a string ie. "PartSquare", using "readVtkArray".
+2. Extract number of particles in each simulation step, matching a string ie. "PartSquare", using "readVtkParticles"
+3. Extract information about total mass in each vtk file at each time step, matching a string ie. "PartFluid", using "MassVtk"
+4. Calculate forces (in Newton) exerted on the all particles included in a vtk file, matching a string, ie. "PartSquare", using "ForceVtk"
 
 # To do
 
 Realistic ideas for the future:
 
 1. Develop algorithm to give a number describing particle spacing ie. has the simulation coarsened over time or kept uniform
-1. Implement a version of DualSPHysics own tools for post-processing in Julia ie. velocity measurement, surface elevation etc.
-1. Further automatic post-processing calculations
+2. Implement a version of DualSPHysics own tools for post-processing in Julia ie. velocity measurement, surface elevation etc.
+3. Further automatic post-processing calculations
 
 # Credits
 
-Version 0.1.2 has been developed by;
+Version 0.1.3 has been developed by;
 
 * Ahmed Salih (AhmedSalih3d) - Idea instigator, user of DualSPHysics for about a year, primary maintainer  of code now
 * Saif Salih (sayfsal) - Developer of initial custom .vtk reader

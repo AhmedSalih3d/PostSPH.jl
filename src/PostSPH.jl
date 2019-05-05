@@ -8,7 +8,8 @@ export
     readVtkArray,
     Cat,
     readVtkParticles,
-    ForceVtk
+    ForceVtk,
+    MassVtk
 ##Hardcoded enum - Cat is "category"
         @enum Cat begin
             Points
@@ -27,7 +28,8 @@ export
         const searchString = Dict(Points => "POINTS ",Idp=>"POINT_DATA ",Vel=>"Vel ",Rhop=>"Rhop ",Mass=>"Mass ",Press => "Press ",Vol => "Vol ",Ace => "Ace ",Vor => "Vor ",Typ=>"Type ",Mk => "Mk ")
         const catType = Dict(Points => Float32,Idp=>Int32,Vel=>Float32,Rhop=>Float32,Mass=>Float32,Press =>Float32,Vol=>Float32,Ace=>Float32,Vor=>Float32,Typ=>Int8,Mk=>Int8)
 
-
+    #Purpose of this is to ensure faster read speed by finding approximate location
+    #of wanted array (typ) in vtk file.
     function _readVtkPos(filename::String,typ::Cat)
         fd::IOStream = open(filename, read=true)
         readuntil(fd, searchString[typ])
@@ -84,7 +86,7 @@ export
         return arrayVal
     end
 
-    #_transferData function used to read file depending on type.
+    #_transferData function used to read file depending on data type.
 
     function _transferData(fd::IOStream, arrayVal::Array{Float32,1})
         sz = size(arrayVal)
@@ -185,11 +187,9 @@ Threads.@threads for i = 1:nFilenames::Number
         return MassArray
     end
 
-    #These functions calculates force for either predefined arrays or filename using
-    #mass of particle times acceleration of a particle. Use SplitVtk to get x y z
-    #components and MagVtk to get magnitude of force later. Arrays have to be same
-    #size which should always be true from data files, unless mistake in datafiles
-    #x-force is given by Force = ForceVtk(filename) -->  Force[1][:,1], while
+    #Arrays have to be same size which should always be true from data files,
+    #unless mistake in datafiles x-force is given by
+    #Force = ForceVtk(filename) -->  Force[1][:,1], while
     #ForceMag is given by Force[2]
     #Currently a bug exists which makes it so, if there is an error in one file
     #the whole terminal might crash..
