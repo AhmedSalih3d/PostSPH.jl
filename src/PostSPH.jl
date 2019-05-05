@@ -9,7 +9,9 @@ export
     Cat,
     readVtkParticles,
     ForceVtk,
-    MassVtk
+    MassVtk,
+    readVtkNames,
+    readVtkVariables
 ##Hardcoded enum - Cat is "category"
         @enum Cat begin
             Points
@@ -29,7 +31,7 @@ export
         const catType = Dict(Points => Float32,Idp=>Int32,Vel=>Float32,Rhop=>Float32,Mass=>Float32,Press =>Float32,Vol=>Float32,Ace=>Float32,Vor=>Float32,Typ=>Int8,Mk=>Int8)
 
     #Purpose of this is to ensure faster read speed by finding approximate location
-    #of wanted array (typ) in vtk file.
+    #of wanted array (typ) in vtk file. The approximate location is found in "PosTyp" variable.
     function _readVtkPos(filename::String,typ::Cat)
         fd::IOStream = open(filename, read=true)
         readuntil(fd, searchString[typ])
@@ -170,6 +172,42 @@ Threads.@threads for i = 1:nFilenames::Number
                     @inbounds k[i] = _GetParticles(filenames[i])
                  end
         return k
+    end
+
+    #Function which reads all available variables in a SINGLE vtk file. "reset"
+    #is set to "true" to ensure correct results, even though the order in "Cat",
+    #should be true for all vtk files. Set to "false" if the order in "Cat" is right
+    #and to get a 7.5 performance boost, ie. wanting to check 10000 files in a for loop.
+    function readVtkVariables(filename::String,resetVar::Bool=true)
+        k::Array{String} = []
+        #Open the specific file
+        fd::IOStream = open(filename, read=true)
+        for i in instances(Cat)
+            #Read until the specific enum string has been found. Ie. Mk => "Mk " etc.
+            if resetVar == true
+                seek(fd,0)
+            end
+            readuntil(fd, searchString[i])
+            #Check if end of file (ie. variable not found)
+            if eof(fd) != true
+                k = push!(k,string(i))
+            end
+        end
+        return k
+    end
+
+    #Function which returns available vtk files in current folder as a string array
+    #Link: https://discourse.julialang.org/t/help-me-make-a-regex-instead-of-this/23878/7
+    #Altered to fit coding convention in PostSPH. Able to insert own path/pattern if wanted.
+    function readVtkNames(filenames::Array{String,1}=readdir(), pattern::Regex=r"([a-zA-Z]+).*\.vtk$")
+        namelist = Vector{String}()  # this makes sure that the list is unique
+        for filename in filenames
+            m = match(pattern, filename)
+            isnothing(m) && continue
+            str = first(m.captures) #? captures for help, it just gets the "PartFluid", component
+            !isempty(str) && push!(namelist, str)
+        end
+        return unique!(namelist)
     end
 
     #Function which returns an array of mass of each single time step

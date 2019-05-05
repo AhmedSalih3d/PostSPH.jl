@@ -88,13 +88,19 @@ to be used by the user.
 
 Due to the way Julia functions, it will recompile a function if input/output changes. A basic example would be running a function with a "Float32" and then a "Float64" input. If the input type is hardcoded Julia will under the hood recompile a type specific version for each input type. Therefore, as an user, if you experience slow initial performance, when trying to load a new variable, try in the first run only to read one file, ie. ```velSquare = readVtkArray("PartSquare_0000.vtk",Cat(2))``` and then afterwards read all files, by using only "PartSquare". This also applies to readVtkParticles.
 
-# Current Implementation (Version 0.1.3)
+# Current Implementation (Version 0.1.4)
 
 Currently it is possible to:
 1. Read single or all .vtk files existing in a directory, matching a string ie. "PartSquare", using "readVtkArray".
 2. Extract number of particles in each simulation step, matching a string ie. "PartSquare", using "readVtkParticles"
 3. Extract information about total mass in each vtk file at each time step, matching a string ie. "PartFluid", using "MassVtk"
 4. Calculate forces (in Newton) exerted on the all particles included in a vtk file, matching a string, ie. "PartSquare", using "ForceVtk"
+
+Some further tools have been developed to ease useability:
+
+1. "readVtkVariables" has been developed which allows an user to check the available parameters in
+    a single vtk file.
+2. "readVtkNames" has been developed so the user can get an array holdning the existing vtk files.
 
 # To do
 
