@@ -251,4 +251,21 @@ Threads.@threads for i = 1:nFilenames::Number
         return ForceArray,ForceMag
     end
 
+    #Function to extract translation
+    function FloatingVtkTranslation(filename::String)
+        Pos = readVtkArray(filename,Points)
+        n = length(Pos)
+        k = size(Pos[1])[1] #Get number of particles in array
+        x = Array{Float32,1}(undef,n)
+        y = similar(x)
+        z = similar(x)
+         for i = 1:length(Pos)
+             xyz = sum(Pos[i],dims=1)/k
+             x[i] = xyz[1]
+             y[i] = xyz[2]
+             z[i] = xyz[3]
+         end
+         return x,y,z
+     end
+
 end #PostSPH
