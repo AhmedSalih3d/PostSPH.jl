@@ -12,7 +12,8 @@ export
     FloatingVtkTranslation,
     MassVtk,
     readVtkNames,
-    readVtkVariables
+    readVtkVariables,
+    readBi4Array
 ##Hardcoded enum - Cat is "category"
         @enum Cat begin
             Points
@@ -268,5 +269,85 @@ Threads.@threads for i = 1:nFilenames::Number
          end
          return x,y,z
      end
+
+##Read from binary files directly
+
+## Make two dicts,   one for the enum -> string and one for the data type - Bi4 specific
+const searchStringBi4 = Dict{Cat,String}(Idp => "Idp", Points => "Pos", Vel => "Vel", Rhop => "Rhop")
+const catTypeBi4 = Dict{Cat,DataType}(Idp => Int32, Points => Float32, Vel => Float32, Rhop => Float32)
+const catArrayBi4  = Dict{Cat,Int64}(Idp => 1, Points => 2, Vel => 2, Rhop => 1)
+const catColBi4  = Dict{Cat,Int64}(Idp => 1, Points => 3, Vel => 3, Rhop => 1)
+
+##
+function _dirFiles()
+    files = readdir()
+    #Operation on dirFiles instantly
+    filter!(x->occursin(r"Part_\d{4}.bi4",x),files)
+    return files
+end
+
+#Test code to read Bi4Files programmatically
+#Procedure is pretty consistent this time, find first "ARRAY" in .bi4 file, then
+#search for the specific "typ" for an example "Idp" - then read 2 x Int32, before
+#reading the important integer, "n", which states number of particles, then read
+#Int32 one more time to move forward in file. So now the construction of
+#preallocated arrays start (k) and values can be filled in.
+#In .bi4 files only the wished array has to be entered, since parts always are
+#called "Parts" - this can be changed in the future if necessary.
+
+
+#Remember to implement "PosTyp" functionality to increase speed drastically
+#and multi-threading where applicable
+
+function _Bi4Pos(typ::Cat)
+    Bi4Files = _dirFiles()
+    ft = open(Bi4Files[1],read=true)
+    readuntil(ft,"ARRAY") #To overstep the initial bit of text
+    readuntil(ft,searchStringBi4[typ])
+    typPos = position(ft)-div(position(ft),20)
+    return typPos
+end
+
+#Reading binary files is much faster using "readbytes!" try to save a copy of
+#the old code so you can always compare, but huge performance gain. Also much
+#less allocations. Remember you multiply by 4 since the base is UInt8!
+
+function readBi4Array(typ::Cat)
+    Bi4Files = _dirFiles()
+    #breakPos = _Bi4Pos(typ)
+    nBi4     = size(Bi4Files)[1]
+    j        = Vector{Array{catTypeBi4[typ],catArrayBi4[typ]}}(undef, nBi4)
+    Threads.@threads for i = 1:nBi4
+        ft = open(Bi4Files[i],read=true)
+        readuntil(ft,"ARRAY")
+        readuntil(ft,searchStringBi4[typ])
+        for i = 1:2
+            read(ft,Int32)
+        end
+        n = read(ft,Int32)
+        read(ft,Int32)
+        if typ == Idp || typ == Rhop
+            #k = zeros(catTypeBi4[typ],n)
+            #k  = Array{catTypeBi4[typ],catArrayBi4[typ]}(undef, n)
+            k  =  zeros(UInt8,n*4)
+            #@time for i = 1:n
+                #@inbounds k[i] = read(ft,catTypeBi4[typ])
+                readbytes!(ft,k,n*4)
+            #end
+        elseif typ == Points || typ == Vel
+            #k = zeros(catTypeBi4[typ],(n,catColBi4[typ]))
+            k  =  zeros(UInt8,(n*4,catColBi4[typ]))
+            readbytes!(ft,k,n*4*3)
+            #for i = 1:n
+            #    for b = 1:catColBi4[typ]
+            #        @inbounds k[i,b] = read(ft,catTypeBi4[typ])
+            #    end
+            #end
+        end
+        close(ft)
+        j[i] = reinterpret(catTypeBi4[typ], k)
+    end
+    return j
+end
 
 end #PostSPH
