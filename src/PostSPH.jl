@@ -9,6 +9,7 @@ export
     Cat,
     readVtkParticles,
     ForceVtk,
+    FloatingVtkTranslation,
     MassVtk,
     readVtkNames,
     readVtkVariables
