@@ -271,14 +271,15 @@ Threads.@threads for i = 1:nFilenames::Number
      end
 
 ##Read from binary files directly
+# Utilizes same "Cat"
 
 ## Make two dicts,   one for the enum -> string and one for the data type - Bi4 specific
-const searchStringBi4 = Dict{Cat,String}(Idp => "Idp", Points => "Pos", Vel => "Vel", Rhop => "Rhop")
+const searchStringBi4 = Dict{Cat,String}(Idp => "ARRAY\x03\0\0\0Idp", Points => "ARRAY\x03\0\0\0Pos", Vel => "ARRAY\x03\0\0\0Vel", Rhop => "ARRAY\x04\0\0\0Rhop")
 const catTypeBi4 = Dict{Cat,DataType}(Idp => Int32, Points => Float32, Vel => Float32, Rhop => Float32)
 const catArrayBi4  = Dict{Cat,Int64}(Idp => 1, Points => 2, Vel => 2, Rhop => 1)
 const catColBi4  = Dict{Cat,Int64}(Idp => 1, Points => 3, Vel => 3, Rhop => 1)
 
-##
+##Lists files in directory and only returns applicable files, ie. "Part_XXXX.bi4"
 function _dirFiles()
     files = readdir()
     #Operation on dirFiles instantly
@@ -286,66 +287,80 @@ function _dirFiles()
     return files
 end
 
-#Test code to read Bi4Files programmatically
-#Procedure is pretty consistent this time, find first "ARRAY" in .bi4 file, then
-#search for the specific "typ" for an example "Idp" - then read 2 x Int32, before
-#reading the important integer, "n", which states number of particles, then read
-#Int32 one more time to move forward in file. So now the construction of
-#preallocated arrays start (k) and values can be filled in.
-#In .bi4 files only the wished array has to be entered, since parts always are
-#called "Parts" - this can be changed in the future if necessary.
-
-
-#Remember to implement "PosTyp" functionality to increase speed drastically
-#and multi-threading where applicable
-
+##Function to determine correct location of array in file for first file and used
+# as an approximate for all future files. Can be turned off.
 function _Bi4Pos(typ::Cat)
     Bi4Files = _dirFiles()
     ft = open(Bi4Files[1],read=true)
-    readuntil(ft,"ARRAY") #To overstep the initial bit of text
     readuntil(ft,searchStringBi4[typ])
     typPos = position(ft)-div(position(ft),20)
     return typPos
 end
 
-#Reading binary files is much faster using "readbytes!" try to save a copy of
-#the old code so you can always compare, but huge performance gain. Also much
-#less allocations. Remember you multiply by 4 since the base is UInt8!
 
-function readBi4Array(typ::Cat)
+##transferData is smart since we change the value of an array in place and
+# skip a lot of unnecessary allocation steps. It has been tuned to accept
+# matrices and vectors, where the type is automatically deduced using "eltype".
+function _transferDataBi4(ft::IOStream, arrayVal::AbstractMatrix)
+    typ = eltype(arrayVal)
+    sz = size(arrayVal)
+    if !eof(ft)
+        for i = 1:sz[1]
+            for k = 1:sz[2]
+                @inbounds arrayVal[i,k] = read(ft, typ)
+            end
+        end
+    end
+end
+
+function _transferDataBi4(ft::IOStream, arrayVal::AbstractVector)
+    typ = eltype(arrayVal)
+    sz = length(arrayVal)
+    for i = 1:sz
+        if !eof(ft)
+            @inbounds arrayVal[i] = read(ft, typ)
+        end
+    end
+end
+
+##Constructs the array dimensions for the subarrays in the final vector, "j",
+#see "readBi4Array"
+function dimMaker(nRow::Int32,nCol::Int64)
+    if nCol==1
+        dim = (nRow,)
+    elseif nCol==3
+        dim = (nRow,nCol)
+    end
+    return dim
+end
+
+
+function readBi4Array(typ::Cat,StartFromTop::Bool=false)
     Bi4Files = _dirFiles()
-    #breakPos = _Bi4Pos(typ)
+
+    if StartFromTop == false
+        breakPos = _Bi4Pos(typ)
+    else
+        breakPos = 0
+    end
+
     nBi4     = size(Bi4Files)[1]
-    j        = Vector{Array{catTypeBi4[typ],catArrayBi4[typ]}}(undef, nBi4)
+
+    j = Vector{Array{catTypeBi4[typ],catArrayBi4[typ]}}(undef, nBi4)
+
     Threads.@threads for i = 1:nBi4
         ft = open(Bi4Files[i],read=true)
-        readuntil(ft,"ARRAY")
+        seek(ft,breakPos)
         readuntil(ft,searchStringBi4[typ])
-        for i = 1:2
-            read(ft,Int32)
-        end
+
+            read(ft,Int64)
         n = read(ft,Int32)
-        read(ft,Int32)
-        if typ == Idp || typ == Rhop
-            #k = zeros(catTypeBi4[typ],n)
-            #k  = Array{catTypeBi4[typ],catArrayBi4[typ]}(undef, n)
-            k  =  zeros(UInt8,n*4)
-            #@time for i = 1:n
-                #@inbounds k[i] = read(ft,catTypeBi4[typ])
-                readbytes!(ft,k,n*4)
-            #end
-        elseif typ == Points || typ == Vel
-            #k = zeros(catTypeBi4[typ],(n,catColBi4[typ]))
-            k  =  zeros(UInt8,(n*4,catColBi4[typ]))
-            readbytes!(ft,k,n*4*3)
-            #for i = 1:n
-            #    for b = 1:catColBi4[typ]
-            #        @inbounds k[i,b] = read(ft,catTypeBi4[typ])
-            #    end
-            #end
-        end
+            read(ft,Int32)
+
+            dim = dimMaker(n,catColBi4[typ])
+            j[i] = zeros(catTypeBi4[typ], dim)
+            _transferDataBi4(ft,j[i])
         close(ft)
-        j[i] = reinterpret(catTypeBi4[typ], k)
     end
     return j
 end
