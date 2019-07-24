@@ -12,7 +12,8 @@ export
     FloatingVtkTranslation,
     MassVtk,
     readVtkNames,
-    readVtkVariables
+    readVtkVariables,
+    readBi4Array
 ##Hardcoded enum - Cat is "category"
         @enum Cat begin
             Points
@@ -268,5 +269,100 @@ Threads.@threads for i = 1:nFilenames::Number
          end
          return x,y,z
      end
+
+##Read from binary files directly
+# Utilizes same "Cat"
+
+## Make two dicts,   one for the enum -> string and one for the data type - Bi4 specific
+const searchStringBi4 = Dict{Cat,String}(Idp => "ARRAY\x03\0\0\0Idp", Points => "ARRAY\x03\0\0\0Pos", Vel => "ARRAY\x03\0\0\0Vel", Rhop => "ARRAY\x04\0\0\0Rhop")
+const catTypeBi4 = Dict{Cat,DataType}(Idp => Int32, Points => Float32, Vel => Float32, Rhop => Float32)
+const catArrayBi4  = Dict{Cat,Int64}(Idp => 1, Points => 2, Vel => 2, Rhop => 1)
+const catColBi4  = Dict{Cat,Int64}(Idp => 1, Points => 3, Vel => 3, Rhop => 1)
+
+##Lists files in directory and only returns applicable files, ie. "Part_XXXX.bi4"
+function _dirFiles()
+    files = readdir()
+    #Operation on dirFiles instantly
+    filter!(x->occursin(r"Part_\d{4}.bi4",x),files)
+    return files
+end
+
+##Function to determine correct location of array in file for first file and used
+# as an approximate for all future files. Can be turned off.
+function _Bi4Pos(typ::Cat)
+    Bi4Files = _dirFiles()
+    ft = open(Bi4Files[1],read=true)
+    readuntil(ft,searchStringBi4[typ])
+    typPos = position(ft)-div(position(ft),20)
+    return typPos
+end
+
+
+##transferData is smart since we change the value of an array in place and
+# skip a lot of unnecessary allocation steps. It has been tuned to accept
+# matrices and vectors, where the type is automatically deduced using "eltype".
+function _transferDataBi4(ft::IOStream, arrayVal::AbstractMatrix)
+    typ = eltype(arrayVal)
+    sz = size(arrayVal)
+    if !eof(ft)
+        for i = 1:sz[1]
+            for k = 1:sz[2]
+                @inbounds arrayVal[i,k] = read(ft, typ)
+            end
+        end
+    end
+end
+
+function _transferDataBi4(ft::IOStream, arrayVal::AbstractVector)
+    typ = eltype(arrayVal)
+    sz = length(arrayVal)
+    for i = 1:sz
+        if !eof(ft)
+            @inbounds arrayVal[i] = read(ft, typ)
+        end
+    end
+end
+
+##Constructs the array dimensions for the subarrays in the final vector, "j",
+#see "readBi4Array"
+function dimMaker(nRow::Int32,nCol::Int64)
+    if nCol==1
+        dim = (nRow,)
+    elseif nCol==3
+        dim = (nRow,nCol)
+    end
+    return dim
+end
+
+
+function readBi4Array(typ::Cat,StartFromTop::Bool=false)
+    Bi4Files = _dirFiles()
+
+    if StartFromTop == false
+        breakPos = _Bi4Pos(typ)
+    else
+        breakPos = 0
+    end
+
+    nBi4     = size(Bi4Files)[1]
+
+    j = Vector{Array{catTypeBi4[typ],catArrayBi4[typ]}}(undef, nBi4)
+
+    Threads.@threads for i = 1:nBi4
+        ft = open(Bi4Files[i],read=true)
+        seek(ft,breakPos)
+        readuntil(ft,searchStringBi4[typ])
+
+            read(ft,Int64)
+        n = read(ft,Int32)
+            read(ft,Int32)
+
+            dim = dimMaker(n,catColBi4[typ])
+            j[i] = zeros(catTypeBi4[typ], dim)
+            _transferDataBi4(ft,j[i])
+        close(ft)
+    end
+    return j
+end
 
 end #PostSPH
