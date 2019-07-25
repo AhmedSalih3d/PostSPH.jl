@@ -3,6 +3,7 @@ __precompile__()
 module PostSPH
 
 using Printf #To construct string message easily
+using StaticArrays
 
 export
     readVtkArray,
@@ -301,39 +302,20 @@ end
 ##transferData is smart since we change the value of an array in place and
 # skip a lot of unnecessary allocation steps. It has been tuned to accept
 # matrices and vectors, where the type is automatically deduced using "eltype".
-function _transferDataBi4(ft::IOStream, arrayVal::AbstractMatrix)
-    typ = eltype(arrayVal)
-    sz = size(arrayVal)
-    if !eof(ft)
-        for i = 1:sz[1]
-            for k = 1:sz[2]
-                @inbounds arrayVal[i,k] = read(ft, typ)
-            end
-        end
-    end
-end
+_readel(ft::IOStream, typ) = read(ft, typ)
+@inline _readel(ft::IOStream, typ::Type{<:SVector{3,T}}) where T = SVector(_readel(ft, T), _readel(ft, T), _readel(ft, T))
 
 function _transferDataBi4(ft::IOStream, arrayVal::AbstractVector)
     typ = eltype(arrayVal)
-    sz = length(arrayVal)
     if !eof(ft)
         @inbounds for i in eachindex(arrayVal)
-            arrayVal[i] = read(ft, typ)
+            arrayVal[i] = _readel(ft, typ)
         end
     end
 end
 
-##Constructs the array dimensions for the subarrays in the final vector, "j",
-#see "readBi4Array"
-function dimMaker(nRow::Int32,nCol::Int64)
-    if nCol==1
-        dim = (nRow,)
-    elseif nCol==3
-        dim = (nRow,nCol)
-    end
-    return dim
-end
-
+##If nCol is not 1, then type is static array
+_typeMaker(typ, nCol) = nCol == 1 ? typ : SVector{nCol, typ}
 
 function readBi4Array(typ::Cat,StartFromTop::Bool=false)
     Bi4Files = _dirFiles()
@@ -346,7 +328,8 @@ function readBi4Array(typ::Cat,StartFromTop::Bool=false)
 
     nBi4     = size(Bi4Files)[1]
 
-    j = Vector{Array{catTypeBi4[typ],catArrayBi4[typ]}}(undef, nBi4)
+    T  = _typeMaker(catTypeBi4[typ], catColBi4[typ])
+    j  = Vector{Array{T}}(undef,nBi4)
 
     Threads.@threads for i = 1:nBi4
         ft = open(Bi4Files[i],read=true)
@@ -357,9 +340,9 @@ function readBi4Array(typ::Cat,StartFromTop::Bool=false)
         n = read(ft,Int32)
             read(ft,Int32)
 
-            dim = dimMaker(n,catColBi4[typ])
-            j[i] = zeros(catTypeBi4[typ], dim)
+            j[i] = zeros(T, n)
             _transferDataBi4(ft,j[i])
+
         close(ft)
     end
     return j

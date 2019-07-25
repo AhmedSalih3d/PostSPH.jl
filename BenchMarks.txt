@@ -1,0 +1,28 @@
+CaseMovingSquare_Run
+|--------WITHOUT STATIC ARRAYS------------|
+@benchmark a = readBi4Array(PostSPH.Vel)
+BenchmarkTools.Trial:
+  memory estimate:  395.44 MiB
+  allocs estimate:  9414
+  --------------
+  minimum time:     1.091 s (0.00% GC)
+  median time:      1.183 s (7.71% GC)
+  mean time:        1.187 s (6.67% GC)
+  maximum time:     1.308 s (12.95% GC)
+  --------------
+  samples:          5
+  evals/sample:     1
+
+|--------WITH STATIC ARRAYS------------|
+@benchmark readBi4Array(Vel)
+BenchmarkTools.Trial:
+ memory estimate:  395.68 MiB
+ allocs estimate:  13173
+ --------------
+ minimum time:     1.140 s (0.00% GC)
+ median time:      1.196 s (7.65% GC)
+ mean time:        1.195 s (6.20% GC)
+ maximum time:     1.238 s (9.93% GC)
+ --------------
+ samples:          5
+ evals/sample:     1
