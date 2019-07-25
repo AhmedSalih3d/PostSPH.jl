@@ -12,3 +12,17 @@ BenchmarkTools.Trial:
   --------------
   samples:          5
   evals/sample:     1
+
+|--------WITH STATIC ARRAYS------------|
+@benchmark readBi4Array(Vel)
+BenchmarkTools.Trial:
+ memory estimate:  395.68 MiB
+ allocs estimate:  13173
+ --------------
+ minimum time:     1.140 s (0.00% GC)
+ median time:      1.196 s (7.65% GC)
+ mean time:        1.195 s (6.20% GC)
+ maximum time:     1.238 s (9.93% GC)
+ --------------
+ samples:          5
+ evals/sample:     1
