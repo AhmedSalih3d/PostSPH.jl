@@ -81,7 +81,7 @@ export
         end
         #Preallocate an array depending on datatype and of chosen size
         #arrayVal::Array{catType[typ],dim} = zeros(catType[typ],size)
-        arrayVal::Array{catType[typ],dim} = Array{catType[typ],dim}(undef, size)
+        arrayVal = Array{catType[typ],dim}(undef, size)
 
         _transferData(fd, arrayVal)
 
@@ -316,9 +316,9 @@ end
 function _transferDataBi4(ft::IOStream, arrayVal::AbstractVector)
     typ = eltype(arrayVal)
     sz = length(arrayVal)
-    for i = 1:sz
-        if !eof(ft)
-            @inbounds arrayVal[i] = read(ft, typ)
+    if !eof(ft)
+        @inbounds for i in eachindex(arrayVal)
+            arrayVal[i] = read(ft, typ)
         end
     end
 end
