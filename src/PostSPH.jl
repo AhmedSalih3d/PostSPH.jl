@@ -339,7 +339,6 @@ function readBi4Array(typ::Cat,StartFromTop::Bool=false)
             read(ft,Int64)
         n = read(ft,Int32)
             read(ft,Int32)
-
             j[i] = zeros(T, n)
             _transferDataBi4(ft,j[i])
 
