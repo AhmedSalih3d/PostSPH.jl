@@ -3,4 +3,5 @@ uuid = "3add7fd0-679a-11e9-0c14-5b1cacad3044"
 version = "0.2.0"
 
 [deps]
-Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
+Printf       = "de0858da-6303-5e67-8744-51eddeeeb8d7"
+StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
