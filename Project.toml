@@ -5,4 +5,4 @@ version = "0.2.0"
 [deps]
 Printf       = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
-LightXML     = "9c8b4983-aa76-5018-a973-4c85ecc9e179
+LightXML     = "9c8b4983-aa76-5018-a973-4c85ecc9e179"
