@@ -5,6 +5,9 @@ module PostSPH
 using Printf #To construct string message easily
 using StaticArrays
 
+#Reading of XML files
+include("ReadXML.jl")
+
 export
     readVtkArray,
     Cat,
@@ -314,18 +317,19 @@ function _transferDataBi4(ft::IOStream, arrayVal::AbstractVector)
     end
 end
 
+
 ##If nCol is not 1, then type is static array
 _typeMaker(typ, nCol) = nCol == 1 ? typ : SVector{nCol, typ}
+#If condition is true, set starting position to 0 of file.
+_StartFromTop(condition,startPos) = condition == false ? startPos : 0
 
-function readBi4Array(typ::Cat,StartFromTop::Bool=false)
+#Command for plotting
+#scatter(getindex.(a[1], 1), getindex.(a[1], 3))
+function readBi4Array(typ::Cat,SeekNull::Bool=false)
     Bi4Files = _dirFiles()
 
-    if StartFromTop == false
-        breakPos = _Bi4Pos(typ)
-    else
-        breakPos = 0
-    end
-
+    startPos = _Bi4Pos(typ)
+    _StartFromTop(SeekNull,startPos) = condition == false ? startPos : 0
     nBi4     = size(Bi4Files)[1]
 
     T  = _typeMaker(catTypeBi4[typ], catColBi4[typ])
@@ -333,12 +337,13 @@ function readBi4Array(typ::Cat,StartFromTop::Bool=false)
 
     Threads.@threads for i = 1:nBi4
         ft = open(Bi4Files[i],read=true)
-        seek(ft,breakPos)
+        seek(ft,startPos)
         readuntil(ft,searchStringBi4[typ])
 
             read(ft,Int64)
         n = read(ft,Int32)
             read(ft,Int32)
+
             j[i] = zeros(T, n)
             _transferDataBi4(ft,j[i])
 
@@ -346,5 +351,51 @@ function readBi4Array(typ::Cat,StartFromTop::Bool=false)
     end
     return j
 end
+
+##StaticArrays is hard to use here since it is needed to offset with "Int32", between
+# all searches unlike "readBi4Array"
+function readBi4Particles()
+    Bi4Files = _dirFiles()
+    nBi4     = size(Bi4Files)[1]
+
+    j  = Vector{Array{Int32,1}}(undef,nBi4)
+
+    ParticleString = ["CaseNp","CaseNfixed","CaseNmoving","CaseNfloat","CaseNfluid"]
+    Threads.@threads for i = 1:nBi4
+        ft = open(Bi4Files[i],read=true)
+        j_inner = zeros(Int32,5)
+        for k in eachindex(j_inner)
+            readuntil(ft,ParticleString[k])
+            read(ft,Int32)
+            j_inner[k] = read(ft,Int32)
+        end
+        j[i] = j_inner
+        close(ft)
+    end
+    return j
+end
+
+#Function to only find specific Idps
+#for MovingSquare example "Bodies[2][1]""
+#In the for loop the first index is the index of the relevant "typ" array,
+#the second index is the sorting of this "typ" array corresponding to the "idp"
+#array and "start:move" are the number of particles defined by the "Body", where
+#0 and 1 indexing from C++ and Julia differences has been taken into account.
+function readBi4Body(Body,typ)
+    start = getfield(Body, :beg)+1    #First idp
+    move  = start+getfield(Body, :count)-1  #Number of particles from first idp
+    @time idp_vec  = readBi4Array(Idp)
+    @time val_vec  = readBi4Array(typ)
+
+    j = similar(val_vec)
+
+    for i = 1:length(pq)
+        j[i] = val_vec[i][sortperm(idp_vec[i])][start:move]
+    end
+
+    return j
+end
+
+
 
 end #PostSPH
