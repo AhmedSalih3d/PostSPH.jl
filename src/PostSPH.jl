@@ -18,9 +18,9 @@ export
     readVtkNames,
     readVtkVariables,
     readBi4Array,
-    readBi4Bodies,
+    readBi4Body,
     MkArray
-    
+
 ##Hardcoded enum - Cat is "category"
         @enum Cat begin
             Points
