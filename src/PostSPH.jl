@@ -387,12 +387,12 @@ end
 function readBi4Body(Body,typ)
     start = getfield(Body, :beg)+1    #First idp
     move  = start+getfield(Body, :count)-1  #Number of particles from first idp
-    @time idp_vec  = readBi4Array(Idp)
-    @time val_vec  = readBi4Array(typ)
+    idp_vec  = readBi4Array(Idp)
+    val_vec  = readBi4Array(typ)
 
     j = similar(val_vec)
 
-    for i = 1:length(pq)
+    for i = 1:length(j)
         j[i] = val_vec[i][sortperm(idp_vec[i])][start:move]
     end
 
