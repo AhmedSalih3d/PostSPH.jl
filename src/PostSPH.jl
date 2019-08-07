@@ -328,10 +328,13 @@ _StartFromTop(condition,startPos) = condition == false ? startPos : 0
 
 #Command for plotting
 #scatter(getindex.(a[1], 1), getindex.(a[1], 3))
-function readBi4Array(typ::Cat,SeekNull::Bool=false)
-    Bi4Files = _dirFiles()
+#readBi4Array(typ::Cat,Bi4Files::Array{String,1}=_dirFiles()) = readBi4Array(typ, false, Bi4Files)
+readBi4Array(typ::Cat,Bi4Files::Array{String,1}) = readBi4Array(typ, false, Bi4Files)
+readBi4Array(typ::Cat,SeekNull::Bool,Bi4Files::String) = readBi4Array(typ, false, [Bi4Files])
+function readBi4Array(typ::Cat,SeekNull::Bool=false,Bi4Files::Array{String,1}=_dirFiles())
 
     startPos = _Bi4Pos(typ)
+    #if true start from top, else do not, use startPos from _Bi4Pos
     _StartFromTop(SeekNull,startPos) = condition == false ? startPos : 0
     nBi4     = size(Bi4Files)[1]
 
@@ -357,8 +360,8 @@ end
 
 ##StaticArrays is hard to use here since it is needed to offset with "Int32", between
 # all searches unlike "readBi4Array"
-function readBi4Particles()
-    Bi4Files = _dirFiles()
+function readBi4Particles(Bi4Files::Array{String,1}=_dirFiles())
+
     nBi4     = size(Bi4Files)[1]
 
     j  = Vector{Array{Int32,1}}(undef,nBi4)
@@ -378,17 +381,35 @@ function readBi4Particles()
     return j
 end
 
+## Function to read the time at current simulation step, as in "XXXX.out"
+function readBi4Time(Bi4Files::Array{String,1}=_dirFiles())
+    nBi4     = size(Bi4Files)[1]
+
+    T  = Float64
+    j  = Vector{T}(undef,nBi4)
+
+    ParticleString = ["TimeStep"]
+    Threads.@threads for i = 1:nBi4
+        ft = open(Bi4Files[i],read=true)
+        readuntil(ft,ParticleString[1])
+        read(ft,Int32)
+        j[i] = read(ft,T)
+        close(ft)
+    end
+    return j
+end
 #Function to only find specific Idps
 #for MovingSquare example "Bodies[2][1]""
 #In the for loop the first index is the index of the relevant "typ" array,
 #the second index is the sorting of this "typ" array corresponding to the "idp"
 #array and "start:move" are the number of particles defined by the "Body", where
 #0 and 1 indexing from C++ and Julia differences has been taken into account.
-function readBi4Body(Body,typ)
+readBi4Body(Body,typ,Bi4Files::String) =  readBi4Body(Body, typ, [Bi4Files])
+function readBi4Body(Body,typ,Bi4Files::Array{String,1}=_dirFiles())
     start = getfield(Body, :beg)+1    #First idp
     move  = start+getfield(Body, :count)-1  #Number of particles from first idp
-    idp_vec  = readBi4Array(Idp)
-    val_vec  = readBi4Array(typ)
+    idp_vec  = readBi4Array(Idp,false,Bi4Files)
+    val_vec  = readBi4Array(typ,false,Bi4Files)
 
     j = similar(val_vec)
 
