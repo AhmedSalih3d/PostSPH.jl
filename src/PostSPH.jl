@@ -236,13 +236,17 @@ function _dirFiles()
     return files
 end
 
+function isc(char)
+           char == "ARRAY\x03\0\0\0Idp"
+end
 ##Function to determine correct location of array in file for first file and used
 # as an approximate for all future files. Can be turned off.
-function _Bi4Pos(typ::Cat)
-    Bi4Files = _dirFiles()
-    ft = open(Bi4Files[1],read=true)
-    readuntil(ft,searchStringBi4[typ])
+# ALLOCATIONS IN _dirFiles() due to "readdir()" which is Julia base
+function _Bi4Pos(typ::Cat,first_file::String)
+    ft = open(first_file,read=true)
+    @time readuntil(ft,searchStringBi4[typ])
     typPos = position(ft)-div(position(ft),20)
+    close(ft)
     return typPos
 end
 
@@ -250,15 +254,14 @@ end
 ##transferData is smart since we change the value of an array in place and
 # skip a lot of unnecessary allocation steps. It has been tuned to accept
 # matrices and vectors, where the type is automatically deduced using "eltype".
-_readel(ft::IOStream, typ) = read(ft, typ)
-@inline _readel(ft::IOStream, typ::Type{<:SVector{3,T}}) where T = SVector(_readel(ft, T), _readel(ft, T), _readel(ft, T))
+@inline _readel(ft::IOStream, typ) = read(ft, typ)
+#@inline _readel(ft::IOStream, typ::Type{<:SVector{3,T}}) where T = SVector(_readel(ft, T), _readel(ft, T), _readel(ft, T))
 
 function _transferDataBi4(ft::IOStream, arrayVal::AbstractVector)
     typ = eltype(arrayVal)
-    if !eof(ft)
-        @inbounds for i in eachindex(arrayVal)
-            arrayVal[i] = _readel(ft, typ)
-        end
+
+    @inbounds for i in eachindex(arrayVal)
+        arrayVal[i] = _readel(ft, typ)
     end
 end
 
@@ -273,15 +276,17 @@ _StartFromTop(condition,startPos) = condition == false ? startPos : 0
 #readBi4Array(typ::Cat,Bi4Files::Array{String,1}=_dirFiles()) = readBi4Array(typ, false, Bi4Files)
 readBi4Array(typ::Cat,Bi4Files::Array{String,1}) = readBi4Array(typ, false, Bi4Files)
 readBi4Array(typ::Cat,SeekNull::Bool,Bi4Files::String) = readBi4Array(typ, false, [Bi4Files])
+readBi4Array(typ::Cat,Bi4Files::String) = readBi4Array(typ, false, [Bi4Files])
 function readBi4Array(typ::Cat,SeekNull::Bool=false,Bi4Files::Array{String,1}=_dirFiles())
 
-    startPos = _Bi4Pos(typ)
+    startPos = _Bi4Pos(typ,Bi4Files[1])
     #if true start from top, else do not, use startPos from _Bi4Pos
     _StartFromTop(SeekNull,startPos) = condition == false ? startPos : 0
     nBi4     = size(Bi4Files)[1]
 
     T  = _typeMaker(catTypeBi4[typ], catColBi4[typ])
-    j  = Vector{Array{T}}(undef,nBi4)
+    j  = fill(Array{T,1}(), nBi4) #Less allocs than Vector{Array{T}}(undef,nBi4)
+    #j  = Vector{Array{T}}(undef,nBi4)
 
     Threads.@threads for i = 1:nBi4
         ft = open(Bi4Files[i],read=true)
@@ -292,8 +297,9 @@ function readBi4Array(typ::Cat,SeekNull::Bool=false,Bi4Files::Array{String,1}=_d
         n = read(ft,Int32)
             read(ft,Int32)
 
-            j[i] = zeros(T, n)
+            j[i] = zeros(T,n)
             _transferDataBi4(ft,j[i])
+
 
         close(ft)
     end
