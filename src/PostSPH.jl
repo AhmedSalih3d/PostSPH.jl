@@ -7,6 +7,7 @@ using StaticArrays
 
 #Reading of XML files
 include("ReadXML.jl")
+include("SaveVTK.jl")
 
 export
     readVtkArray,
@@ -296,7 +297,7 @@ function readBi4Array(typ::Cat,SeekNull::Bool=false,Bi4Files::Array{String,1}=_d
     Threads.@threads for i = 1:nBi4
         ft = open(Bi4Files[i],read=true)
         rf = read(ft)
-        startPos = Base._searchindex(rf, key, 1) + offset
+        startPos = Base._searchindex(rf, key, 1) + offset #1 byte offset
         seek(ft,startPos)
 
             read(ft,Int64)

@@ -13,7 +13,9 @@ cd(raw"D:\DualSPHysics_v5.0\examples\main\01_DamBreak\CaseDambreakVal2D_Sim\data
 
 #@time rho_arr = PostSPH.readBi4Array(PostSPH.Points,PostSPH._dirFiles())
 
-@btime rho_arr = PostSPH.readBi4Array($PostSPH.Points,$PostSPH._dirFiles())
-
-@btime rho_arr2 = PostSPH2.readBi4Array($PostSPH2.Points,$PostSPH2._dirFiles())
+@time pos_arr = PostSPH.readBi4Array(PostSPH.Points,PostSPH._dirFiles()[1])
+rho_arr = PostSPH.readBi4Array(PostSPH.Rhop,PostSPH._dirFiles()[1])
+#@btime rho_arr2 = PostSPH2.readBi4Array($PostSPH2.Points,$PostSPH2._dirFiles())
 #nParticles = PostSPH.readBi4Particles()
+
+PostSPH.SaveVTK.write_vtp("hej_med_dig",pos_arr[1],rho_arr[1])
