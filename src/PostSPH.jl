@@ -219,64 +219,6 @@ Threads.@threads for i = 1:nFilenames::Number
         return unique!(namelist)
     end
 
-    #Function which returns an array of mass of each single time step
-    function MassVtk(filename::String)
-        mass = readVtkArray(filename,Mass)
-            if mass == nothing
-                MassArray = nothing
-            else
-                n = size(mass)[1]
-                MassArray  = Array{Float32,1}(undef,n)
-                for i = 1:n
-                    @inbounds MassArray[i] = sum(mass[i])
-                end
-            end
-        return MassArray
-    end
-
-    #Arrays have to be same size which should always be true from data files,
-    #unless mistake in datafiles x-force is given by
-    #Force = ForceVtk(filename) -->  Force[1][:,1], while
-    #ForceMag is given by Force[2]
-    #Currently a bug exists which makes it so, if there is an error in one file
-    #the whole terminal might crash..
-    function ForceVtk(filename::String)
-        mass = readVtkArray(filename,Mass)
-        ace  = readVtkArray(filename,Ace)
-            if mass == nothing || ace == nothing
-                ForceArray = nothing
-                ForceMag   = nothing
-            else
-                n = size(mass)[1]
-                ForceArray  = Array{Float32,2}(undef,n,3)
-                for i = 1:n
-                    @inbounds ForceArray[i,:] = sum(mass[i].*ace[i],dims=1)
-                end
-                ForceMag  = Array{Float32,1}(undef,n)
-                for i = 1:n
-                    @inbounds ForceMag[i] =  sqrt(ForceArray[i,1].^2+ForceArray[i,2].^2+ForceArray[i,3].^2)
-                end
-            end
-        return ForceArray,ForceMag
-    end
-
-    #Function to extract translation
-    function FloatingVtkTranslation(filename::String)
-        Pos = readVtkArray(filename,Points)
-        n = length(Pos)
-        k = size(Pos[1])[1] #Get number of particles in array
-        x = Array{Float32,1}(undef,n)
-        y = similar(x)
-        z = similar(x)
-         for i = 1:length(Pos)
-             xyz = sum(Pos[i],dims=1)/k
-             x[i] = xyz[1]
-             y[i] = xyz[2]
-             z[i] = xyz[3]
-         end
-         return x,y,z
-     end
-
 ##Read from binary files directly
 # Utilizes same "Cat"
 
@@ -419,6 +361,8 @@ function readBi4Body(Body,typ,Bi4Files::Array{String,1}=_dirFiles())
 
     return j
 end
+
+#Functions
 
 
 
