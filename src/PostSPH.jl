@@ -223,43 +223,49 @@ Threads.@threads for i = 1:nFilenames::Number
 # Utilizes same "Cat"
 
 ## Make two dicts,   one for the enum -> string and one for the data type - Bi4 specific
-const searchStringBi4 = Dict{Cat,String}(Idp => "ARRAY\x03\0\0\0Idp", Points => "ARRAY\x03\0\0\0Pos", Vel => "ARRAY\x03\0\0\0Vel", Rhop => "ARRAY\x04\0\0\0Rhop")
+const varNames  = (:key, :offset)
+
+const IdpSearch    = [0x41;0x52;0x52;0x41;0x59;0x03;0x00;0x00;0x00;0x49;0x64;0x70]
+const IdpOffset    = 11
+const IdpKey       = NamedTuple{varNames}([IdpSearch,IdpOffset])
+
+const PosSearch    = [0x41;0x52;0x52;0x41;0x59;0x03;0x00;0x00;0x00;0x50;0x6f;0x73]
+const PosOffset    = 11
+const PosKey       = NamedTuple{varNames}([PosSearch,PosOffset])
+
+const VelSearch    = [0x41;0x52;0x52;0x41;0x59;0x03;0x00;0x00;0x00;0x56;0x65;0x6c]
+const VelOffset    = 11
+const VelKey       = NamedTuple{varNames}([VelSearch,VelOffset])
+
+const RhopSearch   = [0x41;0x52;0x52;0x41;0x59;0x04;0x00;0x00;0x00;0x52;0x68;0x6f;0x70]
+const RhopOffset   = 12
+const RhopKey      = NamedTuple{varNames}([RhopSearch,RhopOffset])
+
+const searchKeyBi4    = Dict{Cat,NamedTuple}(Idp => IdpKey, Points => PosKey, Vel => VelKey, Rhop => RhopKey)
 const catTypeBi4 = Dict{Cat,DataType}(Idp => Int32, Points => Float32, Vel => Float32, Rhop => Float32)
 const catArrayBi4  = Dict{Cat,Int64}(Idp => 1, Points => 2, Vel => 2, Rhop => 1)
 const catColBi4  = Dict{Cat,Int64}(Idp => 1, Points => 3, Vel => 3, Rhop => 1)
 
 ##Lists files in directory and only returns applicable files, ie. "Part_XXXX.bi4"
-function _dirFiles()
-    files = readdir()
+function _dirFiles(first_file::Bool=false)
+    if first_file == false
+        files = readdir()
+    else
+        files = readdir()[1]
+    end
     #Operation on dirFiles instantly
     filter!(x->occursin(r"Part_\d{4}.bi4",x),files)
     return files
 end
 
-function isc(char)
-           char == "ARRAY\x03\0\0\0Idp"
-end
-##Function to determine correct location of array in file for first file and used
-# as an approximate for all future files. Can be turned off.
-# ALLOCATIONS IN _dirFiles() due to "readdir()" which is Julia base
-function _Bi4Pos(typ::Cat,first_file::String)
-    ft = open(first_file,read=true)
-    @time readuntil(ft,searchStringBi4[typ])
-    typPos = position(ft)-div(position(ft),20)
-    close(ft)
-    return typPos
-end
-
-
 ##transferData is smart since we change the value of an array in place and
 # skip a lot of unnecessary allocation steps. It has been tuned to accept
 # matrices and vectors, where the type is automatically deduced using "eltype".
-@inline _readel(ft::IOStream, typ) = read(ft, typ)
-#@inline _readel(ft::IOStream, typ::Type{<:SVector{3,T}}) where T = SVector(_readel(ft, T), _readel(ft, T), _readel(ft, T))
+ _readel(ft::IOStream, typ) = read(ft, typ)
+@inline _readel(ft::IOStream, typ::Type{<:SVector{3,T}}) where T = SVector(_readel(ft, T), _readel(ft, T), _readel(ft, T))
 
 function _transferDataBi4(ft::IOStream, arrayVal::AbstractVector)
     typ = eltype(arrayVal)
-
     @inbounds for i in eachindex(arrayVal)
         arrayVal[i] = _readel(ft, typ)
     end
@@ -268,10 +274,9 @@ end
 
 ##If nCol is not 1, then type is static array
 _typeMaker(typ, nCol) = nCol == 1 ? typ : SVector{nCol, typ}
-#If condition is true, set starting position to 0 of file.
-_StartFromTop(condition,startPos) = condition == false ? startPos : 0
 
 #Command for plotting
+#println(Char.(key))
 #scatter(getindex.(a[1], 1), getindex.(a[1], 3))
 #readBi4Array(typ::Cat,Bi4Files::Array{String,1}=_dirFiles()) = readBi4Array(typ, false, Bi4Files)
 readBi4Array(typ::Cat,Bi4Files::Array{String,1}) = readBi4Array(typ, false, Bi4Files)
@@ -279,19 +284,20 @@ readBi4Array(typ::Cat,SeekNull::Bool,Bi4Files::String) = readBi4Array(typ, false
 readBi4Array(typ::Cat,Bi4Files::String) = readBi4Array(typ, false, [Bi4Files])
 function readBi4Array(typ::Cat,SeekNull::Bool=false,Bi4Files::Array{String,1}=_dirFiles())
 
-    startPos = _Bi4Pos(typ,Bi4Files[1])
     #if true start from top, else do not, use startPos from _Bi4Pos
-    _StartFromTop(SeekNull,startPos) = condition == false ? startPos : 0
     nBi4     = size(Bi4Files)[1]
 
     T  = _typeMaker(catTypeBi4[typ], catColBi4[typ])
     j  = fill(Array{T,1}(), nBi4) #Less allocs than Vector{Array{T}}(undef,nBi4)
-    #j  = Vector{Array{T}}(undef,nBi4)
+
+    key    = searchKeyBi4[typ].key
+    offset = searchKeyBi4[typ].offset
 
     Threads.@threads for i = 1:nBi4
         ft = open(Bi4Files[i],read=true)
+        rf = read(ft)
+        startPos = Base._searchindex(rf, key, 1) + offset
         seek(ft,startPos)
-        readuntil(ft,searchStringBi4[typ])
 
             read(ft,Int64)
         n = read(ft,Int32)

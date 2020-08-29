@@ -11,4 +11,9 @@ cd(raw"D:\DualSPHysics_v5.0\examples\main\01_DamBreak\CaseDambreakVal2D_Sim\data
 #To see number of particles in each .vtk file do then:
 #@time n   = PostSPH.readVtkParticles("PartFluid")
 
-@time rho_arr = PostSPH.readBi4Array(PostSPH.Rhop,PostSPH._dirFiles()[1])
+#@time rho_arr = PostSPH.readBi4Array(PostSPH.Points,PostSPH._dirFiles())
+
+@btime rho_arr = PostSPH.readBi4Array($PostSPH.Points,$PostSPH._dirFiles())
+
+@btime rho_arr2 = PostSPH2.readBi4Array($PostSPH2.Points,$PostSPH2._dirFiles())
+#nParticles = PostSPH.readBi4Particles()
