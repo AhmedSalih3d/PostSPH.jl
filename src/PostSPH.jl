@@ -73,20 +73,6 @@ function _dirFiles(first_file::Bool=false)
     return files
 end
 
-##transferData is smart since we change the value of an array in place and
-# skip a lot of unnecessary allocation steps. It has been tuned to accept
-# matrices and vectors, where the type is automatically deduced using "eltype".
- _readel(ft::IOStream, typ) = read(ft, typ)
-@inline _readel(ft::IOStream, typ::Type{<:SVector{3,T}}) where T = SVector(_readel(ft, T), _readel(ft, T), _readel(ft, T))
-
-function _transferDataBi4(ft::IOStream, arrayVal::AbstractVector)
-    typ = eltype(arrayVal)
-    @inbounds for i in eachindex(arrayVal)
-        arrayVal[i] = _readel(ft, typ)
-    end
-end
-
-
 ##If nCol is not 1, then type is static array
 _typeMaker(typ, nCol) = nCol == 1 ? typ : SVector{nCol, typ}
 
@@ -95,38 +81,56 @@ _typeMaker(typ, nCol) = nCol == 1 ? typ : SVector{nCol, typ}
 #scatter(getindex.(a[1], 1), getindex.(a[1], 3))
 #readBi4Array(typ::Cat,Bi4Files::Array{String,1}=_dirFiles()) = readBi4Array(typ, false, Bi4Files)
 readBi4Array(typ::Cat,Bi4Files::Array{String,1}) = readBi4Array(typ, false, Bi4Files)
-readBi4Array(typ::Cat,SeekNull::Bool,Bi4Files::String) = readBi4Array(typ, false, [Bi4Files])
-readBi4Array(typ::Cat,Bi4Files::String) = readBi4Array(typ, false, [Bi4Files])
-function readBi4Array(typ::Cat,SeekNull::Bool=false,Bi4Files::Array{String,1}=_dirFiles())
+readBi4Array(typ::Cat,Bi4Files::String) = readBi4Array(typ, [Bi4Files])
+function readBi4Array(typ::Cat,Bi4Files::Array{String,1}=_dirFiles())
 
     #if true start from top, else do not, use startPos from _Bi4Pos
     nBi4     = size(Bi4Files)[1]
 
-    T  = _typeMaker(catTypeBi4[typ], catColBi4[typ])
-    j  = fill(Array{T,1}(), nBi4) #Less allocs than Vector{Array{T}}(undef,nBi4)
-
     key    = searchKeyBi4[typ].key
     offset = searchKeyBi4[typ].offset
+    ncol   = catColBi4[typ]
+
+    T  = catTypeBi4[typ]
+    if ncol == 1
+        j  = fill(Array{T,1}(), nBi4) #Less allocs than Vector{Array{T}}(undef,nBi4)
+    else
+        j  = fill(Array{Float32}(undef, 0, 0), nBi4) #Less allocs than Vector{Array{T}}(undef,nBi4)
+    end
 
     Threads.@threads for i = 1:nBi4
-        ft = open(Bi4Files[i],read=true)
-        rf = read(ft)
-        startPos = Base._searchindex(rf, key, 1) + offset #1 byte offset
-        seek(ft,startPos)
-
-            read(ft,Int64)
-        n = read(ft,Int32)
-            read(ft,Int32)
-
-            j[i] = zeros(T,n)
-            _transferDataBi4(ft,j[i])
-
-
-        close(ft)
+        j_tmp,n = _readBi4(Bi4Files[i],key,offset,T,ncol)
+        j[i]  = reshape(j_tmp,(ncol,n))
     end
     return j
 end
 
+function _readBi4(file::String,key,offset,T,ncol)
+
+    rf = _rf(file)
+    startPos = Base._searchindex(rf, key, 1) + offset #1 byte offset
+
+    #+1 due to hexeditor
+    nid_s = startPos+1+sizeof(Int64)
+    nid_e = nid_s   - 1 +sizeof(Int32)
+
+    n = reinterpret(Int32,rf[nid_s:nid_e])[1]
+
+    did_s = nid_e +1+ sizeof(Int32)
+    did_e = did_s -1 + 4*n*ncol
+
+    data  = reinterpret(T,rf[did_s:did_e])
+
+    return data,n
+end
+
+# Returns Uint8 array of file
+function _rf(file::String)
+    ft = open(file,read=true)
+    rf = read(ft)
+    close(ft)
+    return rf
+end
 ##StaticArrays is hard to use here since it is needed to offset with "Int32", between
 # all searches unlike "readBi4Array"
 function readBi4Particles(Bi4Files::Array{String,1}=_dirFiles())

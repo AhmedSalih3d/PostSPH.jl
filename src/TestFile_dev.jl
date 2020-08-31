@@ -16,16 +16,23 @@ cd(raw"D:\DualSPHysics_v5.0\examples\main\01_DamBreak\CaseDambreakVal2D_Sim\data
 #nParticles = PostSPH.readBi4Particles()
 
 
-files = PostSPH._dirFiles()[1:10]
+#files = PostSPH._dirFiles()[1:10]
 
-@time for file in files
-    pos_arr = PostSPH.readBi4Array(PostSPH.Points,file)
-    idp_arr = PostSPH.readBi4Array(PostSPH.Idp,file)
-    vel_arr = PostSPH.readBi4Array(PostSPH.Vel,file)
-    rho_arr = PostSPH.readBi4Array(PostSPH.Rhop,file)
-
+#@time for file in files
+    #pos_arr = PostSPH.readBi4Array(PostSPH.Points,file)
+    #idp_arr = PostSPH.readBi4Array(PostSPH.Idp,file)
+    #vel_arr = PostSPH.readBi4Array(PostSPH.Vel,file)
+    #@btime rho_arr = PostSPH.readBi4Array($PostSPH.Rhop,$PostSPH._dirFiles());
+    #@btime rho_arr2 = PostSPH2.readBi4Array($PostSPH2.Rhop,$PostSPH2._dirFiles());
     #sim_arr = PostSPH.SaveVTK.SimData(Points = pos_arr[1], Rhop=rho_arr[1], Vel=vel_arr[1])
 
     #save_dir = "D:\\DualSPHysics_v5.0\\examples\\main\\01_DamBreak\\CaseDambreakVal2D_Sim\\particlesJulia\\"
     #PostSPH.SaveVTK.write_vtp(save_dir*file[1:end-4],sim_arr)
-end
+#end
+#@btime rho_arr = PostSPH.readBi4Array($PostSPH.Rhop,$PostSPH._dirFiles());
+#@btime rho_arr2 = PostSPH2.readBi4Array($PostSPH2.Rhop,$PostSPH2._dirFiles());
+# 45.767 ms (4885 allocations: 160.42 MiB)
+# 62.399 ms (4282 allocations: 144.41 MiB)
+
+@btime rho_arr = PostSPH.readBi4Array($PostSPH.Points,$PostSPH._dirFiles());
+@btime rho_arr2 = PostSPH2.readBi4Array($PostSPH2.Points,$PostSPH2._dirFiles());
