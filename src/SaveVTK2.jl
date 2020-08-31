@@ -1,4 +1,4 @@
-module SaveVTK
+module SaveVTK2
 
     using StaticArrays
     using WriteVTK
@@ -9,9 +9,9 @@ module SaveVTK
         write_vtp
 
     @with_kw mutable struct SimData
-        Points::Array{Float32,2} = Array{Float32}(undef, 0, 0)
+        Points::Array{StaticArrays.SArray{Tuple{3},Float32,1,3},1} = Array{StaticArrays.SArray{Tuple{3},Float32,1,3},1}()
         Idp::Array{Int32,1} = Array{Int32,1}()
-        Vel::Array{Float32,2} = Array{Float32}(undef, 0, 0)
+        Vel::Array{StaticArrays.SArray{Tuple{3},Float32,1,3},1} = Array{StaticArrays.SArray{Tuple{3},Float32,1,3},1}()
         Rhop::Array{Float32,1} = Array{Float32,1}()
     end
 
@@ -23,7 +23,7 @@ module SaveVTK
     function write_vtp(filename::String, sim_arr::SimData)
 
         #points   = convert_to_array(sim_arr.Points)
-        points   = sim_arr.Points
+        points   = reinterpret(eltype(eltype(sim_arr.Points)),sim_arr.Points')
 
 
 
@@ -44,7 +44,7 @@ module SaveVTK
             vtk["Idp"]      = sim_arr.Idp
         end
         if !isempty(sim_arr.Vel)
-            velocity = sim_arr.Vel
+            velocity = reinterpret(eltype(eltype(sim_arr.Vel)),sim_arr.Vel')
             vtk["Velocity"] = velocity
         end
         if !isempty(sim_arr.Rhop)

@@ -94,13 +94,15 @@ function readBi4Array(typ::Cat,Bi4Files::Array{String,1}=_dirFiles())
     T  = catTypeBi4[typ]
     if ncol == 1
         j  = fill(Array{T,1}(), nBi4) #Less allocs than Vector{Array{T}}(undef,nBi4)
+        Threads.@threads for i = 1:nBi4
+            j = _readBi4(Bi4Files[i],key,offset,T,ncol)
+        end
     else
-        j  = fill(Array{Float32}(undef, 0, 0), nBi4) #Less allocs than Vector{Array{T}}(undef,nBi4)
-    end
-
-    Threads.@threads for i = 1:nBi4
-        j_tmp,n = _readBi4(Bi4Files[i],key,offset,T,ncol)
-        j[i]  = reshape(j_tmp,(ncol,n))
+        j  = fill(Array{T}(undef, 0, 0), nBi4) #Less allocs than Vector{Array{T}}(undef,nBi4)
+        Threads.@threads for i = 1:nBi4
+            j_tmp,n = _readBi4(Bi4Files[i],key,offset,T,ncol)
+            j[i]  = reshape(j_tmp,(ncol,n))
+        end
     end
     return j
 end
