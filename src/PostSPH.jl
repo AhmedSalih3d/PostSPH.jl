@@ -118,6 +118,7 @@ function _readBi4(file::String,key,offset,T,ncol)
 
     n = reinterpret(Int32,rf[nid_s:nid_e])[1]
 
+    #data id start
     did_s = nid_e +1+ sizeof(Int32)
     did_e = did_s -1 + 4*n*ncol
 
