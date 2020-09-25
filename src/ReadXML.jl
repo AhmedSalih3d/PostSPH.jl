@@ -6,6 +6,7 @@ struct Fixed
     beg
     count
     property
+    bool
 end
 
 struct Moving
@@ -15,6 +16,7 @@ struct Moving
     count
     property
     refmotion
+    bool
 end
 
 struct Floating
@@ -23,6 +25,7 @@ struct Floating
     beg
     count
     property
+    bool
 end
 
 struct Fluid
@@ -30,6 +33,7 @@ struct Fluid
     mk
     beg
     count
+    bool
 end
 
 const BodyType  =  Dict("fixed" => Fixed,"moving" => Moving, "floating" => Floating, "fluid" => Fluid)
@@ -61,13 +65,13 @@ function BodySelect(k,Body)
     property  = attribute(k,"property")
     refmotion = attribute(k,"refmotion")
     if Body == "fixed"
-        Fixed(p(mkbound),p(mk),p(beg),p(count),property)
+        Fixed(p(mkbound),p(mk),p(beg),p(count),property,false)
     elseif Body == "moving"
-        Moving(p(mkbound),p(mk),p(beg),p(count),property,p(refmotion))
+        Moving(p(mkbound),p(mk),p(beg),p(count),property,p(refmotion),false)
     elseif Body == "floating"
-        Floating(p(mkbound),p(mk),p(beg),p(count),property)
+        Floating(p(mkbound),p(mk),p(beg),p(count),property,false)
     elseif Body == "fluid"
-        Fluid(p(mkfluid),p(mk),p(beg),p(count))
+        Fluid(p(mkfluid),p(mk),p(beg),p(count),true)
     end
 end
 

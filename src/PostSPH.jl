@@ -5,6 +5,7 @@ module PostSPH
 using Printf #To construct string message easily
 using StaticArrays
 
+include("ReadXML.jl")
 include("SaveVTK.jl")
 
 export
@@ -95,7 +96,8 @@ function readBi4Array(typ::Cat,Bi4Files::Array{String,1}=_dirFiles())
     if ncol == 1
         j  = fill(Array{T,1}(), nBi4) #Less allocs than Vector{Array{T}}(undef,nBi4)
         Threads.@threads for i = 1:nBi4
-            j = _readBi4(Bi4Files[i],key,offset,T,ncol)
+            j_tmp,n = _readBi4(Bi4Files[i],key,offset,T,ncol)
+            j[i] = j_tmp
         end
     else
         j  = fill(Array{T}(undef, 0, 0), nBi4) #Less allocs than Vector{Array{T}}(undef,nBi4)
@@ -106,6 +108,7 @@ function readBi4Array(typ::Cat,Bi4Files::Array{String,1}=_dirFiles())
     end
     return j
 end
+
 
 function _readBi4(file::String,key,offset,T,ncol)
 
@@ -143,7 +146,7 @@ function readBi4Particles(Bi4Files::Array{String,1}=_dirFiles())
     j  = Vector{Array{Int32,1}}(undef,nBi4)
 
     ParticleString = ["CaseNp","CaseNfixed","CaseNmoving","CaseNfloat","CaseNfluid"]
-    Threads.@threads for i = 1:nBi4
+    for i = 1:nBi4
         ft = open(Bi4Files[i],read=true)
         j_inner = zeros(Int32,5)
         for k in eachindex(j_inner)
@@ -152,6 +155,25 @@ function readBi4Particles(Bi4Files::Array{String,1}=_dirFiles())
             j_inner[k] = read(ft,Int32)
         end
         j[i] = j_inner
+        close(ft)
+    end
+    println(j)
+    return j
+end
+
+function readBi4Npok(Bi4Files::Array{String,1}=_dirFiles())
+
+    nBi4     = size(Bi4Files)[1]
+
+    j  = Vector{Array{Int32,1}}(undef,nBi4)
+
+    ParticleString = "Npok"
+    j              = zeros(Int32,(nBi4,))
+    for i = 1:nBi4
+        ft = open(Bi4Files[i],read=true)
+        readuntil(ft,ParticleString)
+        read(ft,Int32)
+        j[i] = read(ft,Int32)
         close(ft)
     end
     return j
@@ -180,17 +202,37 @@ end
 #the second index is the sorting of this "typ" array corresponding to the "idp"
 #array and "start:move" are the number of particles defined by the "Body", where
 #0 and 1 indexing from C++ and Julia differences has been taken into account.
-readBi4Body(Body,typ,Bi4Files::String) =  readBi4Body(Body, typ, [Bi4Files])
-function readBi4Body(Body,typ,Bi4Files::Array{String,1}=_dirFiles())
+function readBi4Body(Body,typ)
     start = getfield(Body, :beg)+1    #First idp
-    move  = start+getfield(Body, :count)-1  #Number of particles from first idp
-    idp_vec  = readBi4Array(Idp,false,Bi4Files)
-    val_vec  = readBi4Array(typ,false,Bi4Files)
+
+    idp_vec  = readBi4Array(Idp)
+    val_vec  = readBi4Array(typ)
+
+    nBi4     = length(idp_vec)
+
+    k = []
+    move = []
+
+    if Body.bool == true
+        move  = readBi4Npok()
+        k     = collect(1:nBi4)
+    else
+        move  = start+getfield(Body, :count)-1  #Number of particles from first idp
+        k     = ones(Int,nBi4)
+    end
+
 
     j = similar(val_vec)
 
-    for i = 1:length(j)
-        j[i] = val_vec[i][sortperm(idp_vec[i])][start:move]
+    if typ == Idp || typ == Rhop
+        for i = 1:length(j)
+            j[i] = val_vec[i][sortperm(idp_vec[i])][start:move[k[i]]]
+        end
+    else
+        for i = 1:length(j)
+            id = sortperm(idp_vec[i])
+            j[i] = val_vec[i][:,id][:,start:move[k[i]]]
+        end
     end
 
     return j
@@ -199,5 +241,9 @@ end
 #Functions
 
 
+
+function check_true(Body)
+    return Body.bool == true
+end
 
 end #PostSPH
