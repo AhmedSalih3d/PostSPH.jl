@@ -1,3 +1,8 @@
+# NOTICE
+I am actively developing it, some features especially related to vtk have been
+removed for now. If you were using this package, please use an older version
+from late 2019, to keep the same functions as before.
+
 # PostSPH.jl
 Easing the process of post-processing simulations done in DualSPHysics. Currently supporting version 4.4 of DualSPHysics.
 

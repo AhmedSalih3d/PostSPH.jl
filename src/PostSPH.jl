@@ -85,14 +85,13 @@ readBi4Array(typ::Cat,Bi4Files::Array{String,1}) = readBi4Array(typ, false, Bi4F
 readBi4Array(typ::Cat,Bi4Files::String) = readBi4Array(typ, [Bi4Files])
 function readBi4Array(typ::Cat,Bi4Files::Array{String,1}=_dirFiles())
 
-    #if true start from top, else do not, use startPos from _Bi4Pos
     nBi4     = size(Bi4Files)[1]
 
     key    = searchKeyBi4[typ].key
     offset = searchKeyBi4[typ].offset
     ncol   = catColBi4[typ]
+    T      = catTypeBi4[typ]
 
-    T  = catTypeBi4[typ]
     if ncol == 1
         j  = fill(Array{T,1}(), nBi4) #Less allocs than Vector{Array{T}}(undef,nBi4)
         Threads.@threads for i = 1:nBi4
@@ -112,19 +111,29 @@ end
 
 function _readBi4(file::String,key,offset,T,ncol)
 
+    # Import a full bi4 file as Array{UInt8,1}
     rf = _rf(file)
+
+    # Start position is found by search the file for the key and finding
+    # first occurence, then adding offset
     startPos = Base._searchindex(rf, key, 1) + offset #1 byte offset
 
-    #+1 due to hexeditor
-    nid_s = startPos+1+sizeof(Int64)
-    nid_e = nid_s   - 1 +sizeof(Int32)
+    #+1 due to hexeditor/julia?. "n id start" and "n id end"
+    nid_s = startPos + 1  + sizeof(Int64)
+    nid_e = nid_s    - 1  + sizeof(Int32)
 
+    # Every "Array" in bi4 mentions the number of particles, read it in
     n = reinterpret(Int32,rf[nid_s:nid_e])[1]
 
     #data id start
-    did_s = nid_e +1+ sizeof(Int32)
-    did_e = did_s -1 + 4*n*ncol
+    # Multiply with 4 here since UInt8 size, times number of particles, times
+    # times number of columns gives the correct indices in the rf array for
+    # Float32, Int32 etc.
+    did_s = nid_e + 1 + sizeof(Int32)
+    did_e = did_s - 1  + 4*n*ncol
 
+    # Reinterpret the data as the specified data type, extract the relevant
+    # snip of Array{UInt8,1} in "rf"
     data  = reinterpret(T,rf[did_s:did_e])
 
     return data,n
@@ -136,9 +145,10 @@ function _rf(file::String)
     rf = read(ft)
     close(ft)
     return rf
-end
+end2
 ##StaticArrays is hard to use here since it is needed to offset with "Int32", between
 # all searches unlike "readBi4Array"
+# Useless since these values inside do not change
 function readBi4Particles(Bi4Files::Array{String,1}=_dirFiles())
 
     nBi4     = size(Bi4Files)[1]
@@ -161,6 +171,7 @@ function readBi4Particles(Bi4Files::Array{String,1}=_dirFiles())
     return j
 end
 
+#Npok is the current number of actual particles in the bi4 file
 function readBi4Npok(Bi4Files::Array{String,1}=_dirFiles())
 
     nBi4     = size(Bi4Files)[1]
@@ -236,14 +247,6 @@ function readBi4Body(Body,typ)
     end
 
     return j
-end
-
-#Functions
-
-
-
-function check_true(Body)
-    return Body.bool == true
 end
 
 end #PostSPH
