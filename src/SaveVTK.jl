@@ -22,10 +22,7 @@ module SaveVTK
     """
     function write_vtp(filename::String, sim_arr::SimData)
 
-        #points   = convert_to_array(sim_arr.Points)
         points   = sim_arr.Points
-
-
 
         polys = empty(MeshCell{WriteVTK.PolyData.Polys,UnitRange{Int64}}[])
         verts = empty(MeshCell{WriteVTK.PolyData.Verts,UnitRange{Int64}}[])
@@ -34,11 +31,9 @@ module SaveVTK
         # One doesn't even need to pass all of them.
         all_cells = (verts, polys)
 
-        fname = filename
         #allocations here, not my library
-        vtk  = vtk_grid(fname, points, all_cells..., compress=true, append=false)
+        vtk  = vtk_grid(filename, points, all_cells..., compress=true, append=false)
 
-        #vtk[@Name(attribute)] = attribute;
 
         if !isempty(sim_arr.Idp)
             vtk["Idp"]      = sim_arr.Idp

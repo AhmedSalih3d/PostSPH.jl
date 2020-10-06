@@ -28,6 +28,7 @@ function save_files()
 
         save_dir = "D:\\DualSPHysics_v5.0\\examples\\main\\01_DamBreak\\CaseDambreakVal2D_Sim\\particlesJulia\\"
         PostSPH.SaveVTK.write_vtp(save_dir*file[1:end-4],sim_arr)
+        println("Saved ", file)
     end
 end
 
@@ -50,4 +51,3 @@ end
 
 @btime save_files()
 @btime save_files2()
- 

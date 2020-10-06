@@ -41,26 +41,26 @@ export
 ## Make two dicts,   one for the enum -> string and one for the data type - Bi4 specific
 const varNames  = (:key, :offset)
 
-const IdpSearch    = [0x41;0x52;0x52;0x41;0x59;0x03;0x00;0x00;0x00;0x49;0x64;0x70]
+const IdpSearch    = transcode(UInt8,"ARRAY\x03\0\0\0Idp")[:]
 const IdpOffset    = 11
 const IdpKey       = NamedTuple{varNames}([IdpSearch,IdpOffset])
 
-const PosSearch    = [0x41;0x52;0x52;0x41;0x59;0x03;0x00;0x00;0x00;0x50;0x6f;0x73]
+const PosSearch    = transcode(UInt8,"ARRAY\x03\0\0\0Pos")[:]
 const PosOffset    = 11
 const PosKey       = NamedTuple{varNames}([PosSearch,PosOffset])
 
-const VelSearch    = [0x41;0x52;0x52;0x41;0x59;0x03;0x00;0x00;0x00;0x56;0x65;0x6c]
+const VelSearch    = transcode(UInt8,"ARRAY\x03\0\0\0Vel")[:]
 const VelOffset    = 11
 const VelKey       = NamedTuple{varNames}([VelSearch,VelOffset])
 
-const RhopSearch   = [0x41;0x52;0x52;0x41;0x59;0x04;0x00;0x00;0x00;0x52;0x68;0x6f;0x70]
+const RhopSearch   = transcode(UInt8,"ARRAY\x04\0\0\0Rhop")[:]
 const RhopOffset   = 12
 const RhopKey      = NamedTuple{varNames}([RhopSearch,RhopOffset])
 
 const searchKeyBi4    = Dict{Cat,NamedTuple}(Idp => IdpKey, Points => PosKey, Vel => VelKey, Rhop => RhopKey)
-const catTypeBi4 = Dict{Cat,DataType}(Idp => Int32, Points => Float32, Vel => Float32, Rhop => Float32)
-const catArrayBi4  = Dict{Cat,Int64}(Idp => 1, Points => 2, Vel => 2, Rhop => 1)
-const catColBi4  = Dict{Cat,Int64}(Idp => 1, Points => 3, Vel => 3, Rhop => 1)
+const catTypeBi4      = Dict{Cat,DataType}(Idp => Int32, Points => Float32, Vel => Float32, Rhop => Float32)
+const catArrayBi4     = Dict{Cat,Int64}(Idp => 1, Points => 2, Vel => 2, Rhop => 1)
+const catColBi4       = Dict{Cat,Int64}(Idp => 1, Points => 3, Vel => 3, Rhop => 1)
 
 ##Lists files in directory and only returns applicable files, ie. "Part_XXXX.bi4"
 function _dirFiles(first_file::Bool=false)
@@ -100,6 +100,7 @@ function readBi4Array(typ::Cat,Bi4Files::Array{String,1}=_dirFiles())
         end
     else
         j  = fill(Array{T}(undef, 0, 0), nBi4) #Less allocs than Vector{Array{T}}(undef,nBi4)
+        #@time jj  = fill(Vector{SVector{3,T}},nBi4) #More allocs and place
         Threads.@threads for i = 1:nBi4
             j_tmp,n = _readBi4(Bi4Files[i],key,offset,T,ncol)
             j[i]  = reshape(j_tmp,(ncol,n))
@@ -145,7 +146,7 @@ function _rf(file::String)
     rf = read(ft)
     close(ft)
     return rf
-end2
+end
 ##StaticArrays is hard to use here since it is needed to offset with "Int32", between
 # all searches unlike "readBi4Array"
 # Useless since these values inside do not change
@@ -207,6 +208,7 @@ function readBi4Time(Bi4Files::Array{String,1}=_dirFiles())
     end
     return j
 end
+
 #Function to only find specific Idps
 #for MovingSquare example "Bodies[2][1]""
 #In the for loop the first index is the index of the relevant "typ" array,
