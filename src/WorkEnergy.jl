@@ -1,8 +1,12 @@
 include("PostSPH.jl")
+include("ReadXML.jl")
 include("PistonForce.jl")
 using Statistics #to use "mean"
 using Plots
 using PlotThemes
+using DataFrames
+using CSV
+using Gtk
 gr()
 
 
@@ -12,28 +16,79 @@ function mag(arr)
     return sqrt.(arr[1,:].^2 .+ arr[3,:].^2)
 end
 
+macro name(arg)
+   string(arg)
+end
 
-#top_path  = raw"D:\DualSPHysics_v5.0\examples\main\18_WavesTest\08_DpSPS\GenericWaveTank_mDBC_1.2_Dp2"
-top_path  = raw"D:\DualSPHysics_v5.0\examples\main\18_WavesTest\09_DpART\03_GenericWaveTank_mDBC_1.2_Dp1ART"
-mass_bound = 0.4 #0.4
-ke1,pe1,ke2,pe2,de1,de2 = energy_calc(top_path,mass_bound)
-gr_plot_res(top_path,ke1,pe1,ke2,pe2,de1,de2)
+function p64(string)
+    parse(Float64,string)
+end
+
+# function to read specific line
+function readline_n(file,n)
+        open(file, "r") do io
+            for i = 1:n
+                if i == n
+                    return readline(io)
+                    break
+                end
+                readline(io)
+            end
+        end
+end
+
+
+# Function to load all exported case variables
+
+function extract_vars_from_line!(dict,d)
+    dd = split(d,":")[2]
+    ddd = split(dd," ")
+    indices = findall(map(!,isempty.(ddd)))
+    dddd = ddd[indices]
+    n    = length(dddd)
+    ddddd = split.(dddd,"=")
+
+    for i = 1:n
+        d   = ddddd[i]
+        s   = d[1]
+        v   = strip(d[2],['[',']'])
+        push!(dict, Symbol(s) => v)
+    end
+end
+
+function case_vars(path)
+    fpath = joinpath(path,"Run.out")
+    # User vars + cte
+    d =  readline_n(fpath,68)
+    # Some parameters
+    e =  readline_n(fpath,69)
+
+    dict = Dict{Symbol,String}()
+
+    extract_vars_from_line!(dict,d)
+    extract_vars_from_line!(dict,e)
+
+    return dict
+
+end
 
 function energy_calc(top_path,mass_bound)
+    casevar = case_vars(top_path)
     data_path = raw"data"
     name_xml  = raw"GenericWaveTank_mDBC.xml"
     cd(joinpath(top_path,data_path))
-    bodies = MkArray(joinpath(top_path,name_xml))
+    bodies = ReadXML.MkArray(joinpath(top_path,name_xml))
 
     ## FLuid
 
     fluid_pos = PostSPH.readBi4Body(bodies[4][1],PostSPH.Points)
     fluid_vel = PostSPH.readBi4Body(bodies[4][1],PostSPH.Vel)
-    g = 9.80675
+    g = abs(p64(casevar[:Gravity_z]))
+    mass_bound = p64(casevar[:MassBound])
     ir = 6 #influence range
-    pl = 1.5 #plate length
-    orig = 0 #start point of plate
-    d  = 1.2 #depth
+    pl =  p64(casevar[:MassBound]) #plate length
+    orig = p64(casevar[:plate_xpos]) #start point of plate
+    d  = p64(casevar[:depth]) #depth
     indices1 =  map(x-> -ir .<= x[1,:] .<= orig,fluid_pos)
     indices2 =  map(x-> pl .<= x[1,:] .<= pl + ir,fluid_pos)
 
@@ -95,8 +150,11 @@ function energy_calc(top_path,mass_bound)
     te2 = ke2 .+ pe2
     de1,de2 = de(Work,te1,te2)
 
-     #df = DataFrame([t,ke1,pe1,ke2,pe2,de1,de2],[:t,:ke1,:pe1,:ke2,:pe2,:de1,:de2])
-     #CSV.write("path",df)
+     df = DataFrame([t,ke1,pe1,ke2,pe2,de1,de2],[:t,:ke1,:pe1,:ke2,:pe2,:de1,:de2])
+
+     plot_path = mkpath(joinpath(top_path,"energy_plots"))
+     CSV.write(joinpath(plot_path,(@name df)*".csv"),df)
+
     return ke1,pe1,ke2,pe2,de1,de2
 end
 
@@ -140,23 +198,36 @@ function gr_plot_res(top_path,ke1,pe1,ke2,pe2,de1,de2)
 
     # Display plots
 
-    pdf_path  = mkpath(joinpath(top_path,"pdf"))
+     plot_path = mkpath(joinpath(top_path,"energy_plots"))
 
-    display(p0)
-    savefig(p0, joinpath(pdf_path,"gr_FORCE_$case_name.pdf"))
-    sleep(1)
-    display(p00)
-    savefig(p00, joinpath(pdf_path,"gr_WORK_$case_name.pdf"))
-    sleep(1)
-    display(p1)
-    savefig(p1, joinpath(pdf_path,"gr_KE_$case_name.pdf"))
-    sleep(1)
-    display(p2)
-    savefig(p2, joinpath(pdf_path,"gr_PE_$case_name.pdf"))
-    sleep(1)
-    display(p3)
-    savefig(p3, joinpath(pdf_path,"gr_DE_$case_name.pdf"))
-    sleep(1)
+    #display(p0)
+    savefig(p0, joinpath(plot_path,"gr_FORCE_$case_name.pdf"))
+    #sleep(1)
+    #display(p00)
+    savefig(p00, joinpath(plot_path,"gr_WORK_$case_name.pdf"))
+    #sleep(1)
+    #display(p1)
+    savefig(p1, joinpath(plot_path,"gr_KE_$case_name.pdf"))
+    #sleep(1)
+    #display(p2)
+    savefig(p2, joinpath(plot_path,"gr_PE_$case_name.pdf"))
+    #sleep(1)
+    #display(p3)
+    savefig(p3, joinpath(plot_path,"gr_DE_$case_name.pdf"))
+    #sleep(1)
 
     return "Plotting done"
+end
+
+
+#top_path  = raw"D:\DualSPHysics_v5.0\examples\main\18_WavesTest\08_DpSPS\01_GenericWaveTank_mDBC_1.2_Dp-1"
+#cd(raw"D:\DualSPHysics_v5.0\examples\main\18_WavesTest")
+
+function do_postprocess(folders::Array{String,1})
+    for folder in folders
+        mass_bound = 1 #0.4
+        ke1,pe1,ke2,pe2,de1,de2 = energy_calc(folder,mass_bound)
+        gr_plot_res(folder,ke1,pe1,ke2,pe2,de1,de2)
+        println("Done with $folder")
+    end
 end
