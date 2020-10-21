@@ -72,7 +72,7 @@ function case_vars(path)
 
 end
 
-function energy_calc(top_path,mass_bound)
+function energy_calc(top_path)
     casevar = case_vars(top_path)
     data_path = raw"data"
     name_xml  = raw"GenericWaveTank_mDBC.xml"
@@ -139,8 +139,8 @@ function energy_calc(top_path,mass_bound)
             #de2[i+1] = Work[i+1] + te2_ini - te2[i+1]
             #de1[i+1] = Work[i+1] + te1[i] - te1[i+1]
             #de2[i+1] = Work[i+1] + te2[i] - te2[i+1]
-            de1[i+1] = Work[i] + te1[i] - te1[i+1]
-            de2[i+1] = Work[i] + te2[i] - te2[i+1]
+            de1[i+1] = Work[i] + (te1[i] - te1[i+1])/0.05 #delta t
+            de2[i+1] = Work[i] + (te2[i] - te2[i+1])/0.05
         end
 
         return de1,de2
@@ -220,13 +220,12 @@ function gr_plot_res(top_path,ke1,pe1,ke2,pe2,de1,de2)
 end
 
 
-#top_path  = raw"D:\DualSPHysics_v5.0\examples\main\18_WavesTest\08_DpSPS\01_GenericWaveTank_mDBC_1.2_Dp-1"
+top_path  = raw"D:\DualSPHysics_v5.0\examples\main\18_WavesTest\08_DpSPS\01_GenericWaveTank_mDBC_1.2_Dp-1"
 #cd(raw"D:\DualSPHysics_v5.0\examples\main\18_WavesTest")
 
 function do_postprocess(folders::Array{String,1})
     for folder in folders
-        mass_bound = 1 #0.4
-        ke1,pe1,ke2,pe2,de1,de2 = energy_calc(folder,mass_bound)
+        ke1,pe1,ke2,pe2,de1,de2 = energy_calc(folder)
         gr_plot_res(folder,ke1,pe1,ke2,pe2,de1,de2)
         println("Done with $folder")
     end
