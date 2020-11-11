@@ -7,6 +7,7 @@ using Gtk
 using PGFPlotsX
 using PlotThemes
 using Colors
+using LaTeXStrings
 pgfplotsx()
 
 theme(:vibrant,
@@ -82,6 +83,37 @@ function read_vor(top_path)
     return time,vor_pos,vor_header_y,vor_df_y
 end
 
+function save_vor_data(top_path)
+    fpath = "vorticity"
+
+    final_path = joinpath.(top_path,fpath)
+
+    time,vor_pos,vor_header_y,vor_df_y = read_vor(top_path);
+
+    col_mean = mean.(eachcol(vor_df_y))
+
+    mvt = similar(col_mean)
+    for i = 1:length(col_mean)
+        mvt[i] = mean((vor_df_y[!,i] .- col_mean[i]).^2)
+    end
+
+    df_res = DataFrame([vor_pos[1,:],col_mean,mvt],[:posx,:col_mean,:mvt])
+    CSV.write(joinpath(final_path,"df_res_vorticity.csv"),df_res)
+
+    println("Finished saving data for $final_path")
+    return df_res
+end
+
+function save_all_vor_data(folders)
+    for path in folders
+        try
+            save_vor_data(path)
+        catch
+            println("WARNING: Vorticity folder was not foind in $path. Remember to run post-processing tool")
+        end
+    end
+end
+
 function do_plots(folders)
     all_plots = empty([], Plots.Plot)
 
@@ -112,22 +144,57 @@ function do_plots(folders)
     return all_plots
 end
 
-folders = open_dialog("Select Dataset Folder", action=GtkFileChooserAction.SELECT_FOLDER,select_multiple=true)
-all_plots = do_plots(folders)
-n_plots   = length(all_plots)
-if isodd(n_plots)
-    n_plots = n_plots + 1
-    push!(all_plots,plot(framestyle = :none))
+function plot_df_vor_res(folders)
+    sub_path = "vorticity"
+
+    p1 = plot(legend=:outertopright,palette=:tab20)
+        #xlabel!("Horizontal Position")
+        ylabel!(L"[$\textrm{m}$]")
+        title!(L"Vorticity Mean - $\langle \omega \rangle_t$")
+        xlims!(-13,7)
+    p2 = plot(legend=:outertopright,palette=:tab20)
+        xlabel!("Horizontal Position")
+        ylabel!(L"[$\textrm{m}^2$]")
+        title!(L"Vorticity Variance - $\langle \left( \omega - \langle \omega \rangle \right)^2 \rangle_t$")
+        xlims!(-13,7)
+
+    for folder in folders
+        final_path = joinpath(joinpath(folder,sub_path),"df_res_vorticity.csv")
+        df = CSV.read(final_path,DataFrame; delim=",")
+
+        plot!(p1,df[!,"posx"],df[!,"col_mean"],label=basename(folder))
+        plot!(p2,df[!,"posx"],df[!,"mvt"],label=basename(folder))
+        #ylims!(0,0.03)
+        
+    end
+
+    l = @layout grid(2,1)
+
+    pall = plot(p1,p2, layout = l,size=(800,800))
+
+    display(pall)
 end
-ev_id = 2:2:n_plots
-un_id = 1:2:n_plots
-xlabel!.(all_plots[1:(n_plots - 2)],"")
-ylabel!.(all_plots[ev_id],"")
+
+folders = open_dialog("Select Dataset Folder", action=GtkFileChooserAction.SELECT_FOLDER,select_multiple=true)
+plot_df_vor_res(folders)
+#save_all_vor_data(folders)
+
+# Manually do time line plots
+# all_plots = do_plots(folders)
+# n_plots   = length(all_plots)
+# if isodd(n_plots)
+#     n_plots = n_plots + 1
+#     push!(all_plots,plot(framestyle = :none))
+# end
+# ev_id = 2:2:n_plots
+# un_id = 1:2:n_plots
+# xlabel!.(all_plots[1:(n_plots - 2)],"")
+# ylabel!.(all_plots[ev_id],"")
 
 
-sz = Int(n_plots/2)
-l = @layout grid(sz,2)
+# sz = Int(n_plots/2)
+# l = @layout grid(sz,2)
 
 
-pall = plot(all_plots..., layout = l,size=(800*sz,800*sz))
-savefig(pall,"Test.pdf")
+# pall = plot(all_plots..., layout = l,size=(800*sz,800*sz))
+# savefig(pall,"Test.pdf")

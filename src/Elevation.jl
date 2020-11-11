@@ -308,23 +308,22 @@ function make_plots(top_path)
 end
 
 function plot_df_res(folders,filename)
-    p1 = plot(legend=:outertopright)
+    p1 = plot(legend=:outertopright,palette=:tab20)
     for folder in folders
         df = CSV.read(joinpath(joinpath(folder,"elevation"),"df_res_elevation.csv"),DataFrame; delim=",")
         plot!(df[!,"posx"],df[!,"col_mean"],label=basename(folder))
         ylims!(-0.05,0.05)
         ylabel!("[m]")
-        #title!(L"Height Mean - $\langle h \rangle_t$")
-        title!(filename)
+        title!(L"Height Mean - $\langle h \rangle_t$")
     end
 
-    p2 = plot(legend=:outertopright)
+    p2 = plot(legend=:outertopright,palette=:tab20)
     for folder in folders
         df = CSV.read(joinpath(joinpath(folder,"elevation"),"df_res_elevation.csv"),DataFrame; delim=",")
         plot!(df[!,"posx"],df[!,"mht"],label=basename(folder))
         ylims!(0,0.03)
         xlabel!("Horizontal Position")
-        ylabel!("[]")
+        ylabel!(L"[$\textrm{m}^2$]")
         title!(L"Height Variance - $\langle \left( h - \langle h \rangle \right)^2 \rangle_t$")
     end
 
@@ -333,6 +332,9 @@ function plot_df_res(folders,filename)
     pall = plot(p1,p2, layout = l,size=(800,800))
 
     display(pall)
+
+    save_path = filename*".pdf"
+    savefig(save_path)
 end
 
 ## Extended energy calc
@@ -447,11 +449,6 @@ end
 # plot(posz,e_final[1])
 # ## Working on height variance
 
-folders = open_dialog("Select Dataset Folder", action=GtkFileChooserAction.SELECT_FOLDER,select_multiple=true)
-#make_plots(folders)
-filename = get_filename_gui()
-plot_df_res(folders,filename)
-
 ## Make small interface
 function get_filename_gui()
     win = GtkWindow("Save File",300,50)
@@ -478,3 +475,14 @@ function get_filename_gui()
 
     return str
 end
+
+parent_dir = raw"D:\DualSPHysics_v5.0\examples\main\19_FinalInitial"
+dirs = filter(x -> isdir(joinpath(parent_dir, x)), readdir(parent_dir))
+
+folders = joinpath.(joinpath.(parent_dir,dirs),"Simulation_Dp0.01")
+
+#folders = open_dialog("Select Dataset Folder", action=GtkFileChooserAction.SELECT_FOLDER,select_multiple=true)
+#df = make_plots(folders)
+filename = get_filename_gui()
+plot_df_res(folders,filename)
+
