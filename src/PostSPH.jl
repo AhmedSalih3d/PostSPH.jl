@@ -5,6 +5,8 @@ module PostSPH
 using Printf #To construct string message easily
 using StaticArrays
 
+#Add to project.toml manually: https://discourse.julialang.org/t/update-project-toml-manually/32477
+
 include("ReadXML.jl")
 include("SaveVTK.jl")
 
