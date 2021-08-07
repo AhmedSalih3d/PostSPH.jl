@@ -80,6 +80,7 @@ function readBi4Array(typ::Cat,Bi4Files::Array{String,1}=_dirFiles())
     ncol   = catColBi4[typ]
     T      = catTypeBi4[typ]
 
+    # THIS BREAKS SAVE VTK
     j = Vector{Array{T,1}}(undef,nBi4)
     Threads.@threads for i = 1:nBi4
         j_tmp,~ = _readBi4(Bi4Files[i],key,offset,T,ncol)
