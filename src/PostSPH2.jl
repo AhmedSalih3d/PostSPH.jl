@@ -5,7 +5,7 @@ module PostSPH2
 using Printf #To construct string message easily
 using StaticArrays
 
-include("SaveVTK2.jl")
+include("..SaveVTK2.jl")
 
 export
     readVtkArray,

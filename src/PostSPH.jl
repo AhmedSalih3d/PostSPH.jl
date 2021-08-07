@@ -9,16 +9,11 @@ include("ReadXML.jl")
 include("SaveVTK.jl")
 
 export
-    readVtkArray,
     Cat,
-    readVtkParticles,
-    ForceVtk,
-    FloatingVtkTranslation,
-    MassVtk,
-    readVtkNames,
-    readVtkVariables,
     readBi4Array,
     readBi4Body,
+    readBi4Particles,
+    readBi4Time,
     MkArray
 
 ##Hardcoded enum - Cat is "category"
