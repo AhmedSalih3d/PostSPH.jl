@@ -78,7 +78,7 @@ _typeMaker(typ, nCol) = nCol == 1 ? typ : SVector{nCol, typ}
 #println(Char.(key))
 #scatter(getindex.(a[1], 1), getindex.(a[1], 3))
 #readBi4Array(typ::Cat,Bi4Files::Array{String,1}=_dirFiles()) = readBi4Array(typ, false, Bi4Files)
-readBi4Array(typ::Cat,Bi4Files::Array{String,1}) = readBi4Array(typ, false, Bi4Files)
+#readBi4Array(typ::Cat,Bi4Files::Array{String,1}) = readBi4Array(typ, false, Bi4Files)
 readBi4Array(typ::Cat,Bi4Files::String) = readBi4Array(typ, [Bi4Files])
 function readBi4Array(typ::Cat,Bi4Files::Array{String,1}=_dirFiles())
 
