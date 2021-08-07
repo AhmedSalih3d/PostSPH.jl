@@ -26,7 +26,7 @@ module SaveVTK
         y        = sim_arr.Points[2:3:end]
         z        = sim_arr.Points[3:3:end]
 
-        points   = hcat(x,y,z)
+        points   = hcat(x,y,z)'
 
         polys = empty(MeshCell{WriteVTK.PolyData.Polys,UnitRange{Int64}}[])
         verts = empty(MeshCell{WriteVTK.PolyData.Verts,UnitRange{Int64}}[])
@@ -46,7 +46,7 @@ module SaveVTK
             vx       = sim_arr.Vel[1:3:end]
             vy       = sim_arr.Vel[2:3:end]
             vz       = sim_arr.Vel[3:3:end]
-            velocity = hcat(vx,vy,vz)
+            velocity = hcat(vx,vy,vz)'
             vtk["Velocity"] = velocity
         end
         if !isempty(sim_arr.Rhop)
