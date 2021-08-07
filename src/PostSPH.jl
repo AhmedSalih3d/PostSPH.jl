@@ -15,8 +15,7 @@ export
     readBi4Array,
     readBi4Body,
     readBi4Particles,
-    readBi4Time,
-    MkArray
+    readBi4Time
 
 ##Hardcoded enum - Cat is "category"
 @enum Cat begin
@@ -54,12 +53,8 @@ const catColBi4       = Dict{Cat,Int64}(Idp => 1, Points => 3, Vel => 3, Rhop =>
 
 ##Lists files in directory and only returns applicable files, ie. "Part_XXXX.bi4"
 # first_file bug
-function _dirFiles(first_file::Bool=false)
-    if first_file == false
-        files = readdir()
-    else
-        files = readdir()[1]
-    end
+function _dirFiles()
+    files = readdir()
     #Operation on dirFiles instantly
     filter!(x->occursin(r"Part_\d{4}.bi4",x),files)
     return files
@@ -83,8 +78,7 @@ function readBi4Array(typ::Cat,Bi4Files::Array{String,1}=_dirFiles())
     # THIS BREAKS SAVE VTK
     j = Vector{Array{T,1}}(undef,nBi4)
     Threads.@threads for i = 1:nBi4
-        j_tmp,~ = _readBi4(Bi4Files[i],key,offset,T,ncol)
-        j[i] = j_tmp
+        j[i],~ = _readBi4(Bi4Files[i],key,offset,T,ncol)
     end
 
     return j
