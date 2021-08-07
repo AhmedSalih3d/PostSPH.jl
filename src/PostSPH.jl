@@ -19,24 +19,17 @@ export
     MkArray
 
 ##Hardcoded enum - Cat is "category"
-        @enum Cat begin
+@enum Cat begin
             Points
             Idp
             Vel
             Rhop
-            Mass
-            Press
-            Vol
-            Ace
-            Vor
-            Typ #Typ, since "Type" is illegal to assign
-            Mk
-        end
+          end
 
 ##Read from binary files directly
 
 ## Make two dicts,   one for the enum -> string and one for the data type - Bi4 specific
-const varNames  = (:key, :offset)
+const varNames     = (:key, :offset)
 
 const IdpSearch    = transcode(UInt8,"ARRAY\x03\0\0\0Idp")[:]
 const IdpOffset    = 11
@@ -60,6 +53,7 @@ const catArrayBi4     = Dict{Cat,Int64}(Idp => 1, Points => 2, Vel => 2, Rhop =>
 const catColBi4       = Dict{Cat,Int64}(Idp => 1, Points => 3, Vel => 3, Rhop => 1)
 
 ##Lists files in directory and only returns applicable files, ie. "Part_XXXX.bi4"
+# first_file bug
 function _dirFiles(first_file::Bool=false)
     if first_file == false
         files = readdir()
@@ -70,9 +64,6 @@ function _dirFiles(first_file::Bool=false)
     filter!(x->occursin(r"Part_\d{4}.bi4",x),files)
     return files
 end
-
-##If nCol is not 1, then type is static array
-_typeMaker(typ, nCol) = nCol == 1 ? typ : SVector{nCol, typ}
 
 #Command for plotting
 #println(Char.(key))
@@ -89,20 +80,12 @@ function readBi4Array(typ::Cat,Bi4Files::Array{String,1}=_dirFiles())
     ncol   = catColBi4[typ]
     T      = catTypeBi4[typ]
 
-    if ncol == 1
-        j  = fill(Array{T,1}(), nBi4) #Less allocs than Vector{Array{T}}(undef,nBi4)
-        Threads.@threads for i = 1:nBi4
-            j_tmp,n = _readBi4(Bi4Files[i],key,offset,T,ncol)
-            j[i] = j_tmp
-        end
-    else
-        j  = fill(Array{T}(undef, 0, 0), nBi4) #Less allocs than Vector{Array{T}}(undef,nBi4)
-        #@time jj  = fill(Vector{SVector{3,T}},nBi4) #More allocs and place
-        Threads.@threads for i = 1:nBi4
-            j_tmp,n = _readBi4(Bi4Files[i],key,offset,T,ncol)
-            j[i]  = reshape(j_tmp,(ncol,n))
-        end
+    j = Vector{Array{T,1}}(undef,nBi4)
+    Threads.@threads for i = 1:nBi4
+        j_tmp,~ = _readBi4(Bi4Files[i],key,offset,T,ncol)
+        j[i] = j_tmp
     end
+
     return j
 end
 
@@ -165,7 +148,6 @@ function readBi4Particles(Bi4Files::Array{String,1}=_dirFiles())
         j[i] = j_inner
         close(ft)
     end
-    println(j)
     return j
 end
 
@@ -224,7 +206,7 @@ function readBi4Body(Body,typ)
     move = []
 
     if Body.bool == true
-        move  = readBi4Npok()
+        move  = readBi4Npok( )
         k     = collect(1:nBi4)
     else
         move  = start+getfield(Body, :count)-1  #Number of particles from first idp
