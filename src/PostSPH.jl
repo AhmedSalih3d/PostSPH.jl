@@ -88,7 +88,9 @@ end
 function _readBi4(file::String,key,offset,T,ncol)
 
     # Import a full bi4 file as Array{UInt8,1}
-    rf = _rf(file)
+    ft = open(file,read=true)
+    rf = read(ft)
+    close(ft)
 
     # Start position is found by search the file for the key and finding
     # first occurence, then adding offset
@@ -115,13 +117,6 @@ function _readBi4(file::String,key,offset,T,ncol)
     return data,n
 end
 
-# Returns Uint8 array of file
-function _rf(file::String)
-    ft = open(file,read=true)
-    rf = read(ft)
-    close(ft)
-    return rf
-end
 ##StaticArrays is hard to use here since it is needed to offset with "Int32", between
 # all searches unlike "readBi4Array"
 # Useless since these values inside do not change
