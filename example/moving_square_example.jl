@@ -7,6 +7,11 @@ pos_array  = readBi4Array(PostSPH.Points)
 vel_array  = readBi4Array(PostSPH.Vel)
 idp_array  = readBi4Array(PostSPH.Idp)
 
+
+Npok                        = PostSPH.readBi4_CurrentTotalParticles()
+TypeOfParticle, NValues     = PostSPH.readBi4_NumberOfParticles()
+NTime                       = PostSPH.readBi4_Time()
+
 # Save to vtk
 for i = 1:251
     SimData101 = PostSPH.SaveVTK.SimData(Points = pos_array[i],

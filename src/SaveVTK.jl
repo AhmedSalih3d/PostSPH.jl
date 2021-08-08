@@ -8,6 +8,9 @@ module SaveVTK
     export
         write_vtp
 
+    """
+        Struct to hold simulation data
+    """
     @with_kw mutable struct SimData
         Points#::Array{Float32,1} = Array{Float32}(undef, 0)
         Idp#::Array{Int32,1} = Array{Int32,1}()

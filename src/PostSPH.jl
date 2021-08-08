@@ -14,9 +14,13 @@ export
     Cat,
     readBi4Array,
     readBi4_NumberOfParticles,
+    readBi4_CurrentTotalParticles,
     readBi4_Time
 
 ##Hardcoded enum - Cat is "category"
+"""
+    Cat are hardcoded enums to specify the potential arrays extractable from bi4 files.
+"""
 @enum Cat begin
             Points
             Idp
