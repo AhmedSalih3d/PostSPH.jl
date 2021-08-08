@@ -13,9 +13,8 @@ include("SaveVTK.jl")
 export
     Cat,
     readBi4Array,
-    readBi4Body,
-    readBi4Particles,
-    readBi4Time
+    readBi4_NumberOfParticles,
+    readBi4_Time
 
 ##Hardcoded enum - Cat is "category"
 @enum Cat begin
@@ -117,10 +116,8 @@ function _readBi4(file::String,key,offset,T,ncol)
     return data,n
 end
 
-##StaticArrays is hard to use here since it is needed to offset with "Int32", between
-# all searches unlike "readBi4Array"
-# Useless since these values inside do not change
-function readBi4Particles(Bi4Files::Array{String,1}=_dirFiles())
+
+function readBi4_NumberOfParticles(Bi4Files::Array{String,1}=_dirFiles())
 
     nBi4     = size(Bi4Files)[1]
 
@@ -129,7 +126,7 @@ function readBi4Particles(Bi4Files::Array{String,1}=_dirFiles())
     ParticleString = ["CaseNp","CaseNfixed","CaseNmoving","CaseNfloat","CaseNfluid"]
     for i = 1:nBi4
         ft = open(Bi4Files[i],read=true)
-        j_inner = zeros(Int32,5)
+        j_inner = zeros(Int32,length(ParticleString))
         for k in eachindex(j_inner)
             readuntil(ft,ParticleString[k])
             read(ft,Int32)
@@ -138,11 +135,11 @@ function readBi4Particles(Bi4Files::Array{String,1}=_dirFiles())
         j[i] = j_inner
         close(ft)
     end
-    return j
+    return ParticleString,j
 end
 
 #Npok is the current number of actual particles in the bi4 file
-function readBi4Npok(Bi4Files::Array{String,1}=_dirFiles())
+function readBi4_CurrentTotalParticles(Bi4Files::Array{String,1}=_dirFiles())
 
     nBi4     = size(Bi4Files)[1]
 
@@ -161,7 +158,7 @@ function readBi4Npok(Bi4Files::Array{String,1}=_dirFiles())
 end
 
 ## Function to read the time at current simulation step, as in "XXXX.out"
-function readBi4Time(Bi4Files::Array{String,1}=_dirFiles())
+function readBi4_Time(Bi4Files::Array{String,1}=_dirFiles())
     nBi4     = size(Bi4Files)[1]
 
     T  = Float64
