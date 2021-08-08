@@ -13,30 +13,25 @@ include("SaveVTK.jl")
 export
     Cat,
     readBi4Array,
-    readBi4Body,
-    readBi4Particles,
-    readBi4Time,
-    MkArray
+    readBi4_NumberOfParticles,
+    readBi4_CurrentTotalParticles,
+    readBi4_Time
 
 ##Hardcoded enum - Cat is "category"
-        @enum Cat begin
+"""
+    Cat are hardcoded enums to specify the potential arrays extractable from bi4 files.
+"""
+@enum Cat begin
             Points
             Idp
             Vel
             Rhop
-            Mass
-            Press
-            Vol
-            Ace
-            Vor
-            Typ #Typ, since "Type" is illegal to assign
-            Mk
-        end
+          end
 
 ##Read from binary files directly
 
 ## Make two dicts,   one for the enum -> string and one for the data type - Bi4 specific
-const varNames  = (:key, :offset)
+const varNames     = (:key, :offset)
 
 const IdpSearch    = transcode(UInt8,"ARRAY\x03\0\0\0Idp")[:]
 const IdpOffset    = 11
@@ -60,19 +55,13 @@ const catArrayBi4     = Dict{Cat,Int64}(Idp => 1, Points => 2, Vel => 2, Rhop =>
 const catColBi4       = Dict{Cat,Int64}(Idp => 1, Points => 3, Vel => 3, Rhop => 1)
 
 ##Lists files in directory and only returns applicable files, ie. "Part_XXXX.bi4"
-function _dirFiles(first_file::Bool=false)
-    if first_file == false
-        files = readdir()
-    else
-        files = readdir()[1]
-    end
+# first_file bug
+function _dirFiles()
+    files = readdir()
     #Operation on dirFiles instantly
     filter!(x->occursin(r"Part_\d{4}.bi4",x),files)
     return files
 end
-
-##If nCol is not 1, then type is static array
-_typeMaker(typ, nCol) = nCol == 1 ? typ : SVector{nCol, typ}
 
 #Command for plotting
 #println(Char.(key))
@@ -89,20 +78,12 @@ function readBi4Array(typ::Cat,Bi4Files::Array{String,1}=_dirFiles())
     ncol   = catColBi4[typ]
     T      = catTypeBi4[typ]
 
-    if ncol == 1
-        j  = fill(Array{T,1}(), nBi4) #Less allocs than Vector{Array{T}}(undef,nBi4)
-        Threads.@threads for i = 1:nBi4
-            j_tmp,n = _readBi4(Bi4Files[i],key,offset,T,ncol)
-            j[i] = j_tmp
-        end
-    else
-        j  = fill(Array{T}(undef, 0, 0), nBi4) #Less allocs than Vector{Array{T}}(undef,nBi4)
-        #@time jj  = fill(Vector{SVector{3,T}},nBi4) #More allocs and place
-        Threads.@threads for i = 1:nBi4
-            j_tmp,n = _readBi4(Bi4Files[i],key,offset,T,ncol)
-            j[i]  = reshape(j_tmp,(ncol,n))
-        end
+    # THIS BREAKS SAVE VTK
+    j = Vector{Array{T,1}}(undef,nBi4)
+    Threads.@threads for i = 1:nBi4
+        j[i],~ = _readBi4(Bi4Files[i],key,offset,T,ncol)
     end
+
     return j
 end
 
@@ -110,7 +91,9 @@ end
 function _readBi4(file::String,key,offset,T,ncol)
 
     # Import a full bi4 file as Array{UInt8,1}
-    rf = _rf(file)
+    ft = open(file,read=true)
+    rf = read(ft)
+    close(ft)
 
     # Start position is found by search the file for the key and finding
     # first occurence, then adding offset
@@ -137,17 +120,8 @@ function _readBi4(file::String,key,offset,T,ncol)
     return data,n
 end
 
-# Returns Uint8 array of file
-function _rf(file::String)
-    ft = open(file,read=true)
-    rf = read(ft)
-    close(ft)
-    return rf
-end
-##StaticArrays is hard to use here since it is needed to offset with "Int32", between
-# all searches unlike "readBi4Array"
-# Useless since these values inside do not change
-function readBi4Particles(Bi4Files::Array{String,1}=_dirFiles())
+
+function readBi4_NumberOfParticles(Bi4Files::Array{String,1}=_dirFiles())
 
     nBi4     = size(Bi4Files)[1]
 
@@ -156,7 +130,7 @@ function readBi4Particles(Bi4Files::Array{String,1}=_dirFiles())
     ParticleString = ["CaseNp","CaseNfixed","CaseNmoving","CaseNfloat","CaseNfluid"]
     for i = 1:nBi4
         ft = open(Bi4Files[i],read=true)
-        j_inner = zeros(Int32,5)
+        j_inner = zeros(Int32,length(ParticleString))
         for k in eachindex(j_inner)
             readuntil(ft,ParticleString[k])
             read(ft,Int32)
@@ -165,12 +139,11 @@ function readBi4Particles(Bi4Files::Array{String,1}=_dirFiles())
         j[i] = j_inner
         close(ft)
     end
-    println(j)
-    return j
+    return ParticleString,j
 end
 
 #Npok is the current number of actual particles in the bi4 file
-function readBi4Npok(Bi4Files::Array{String,1}=_dirFiles())
+function readBi4_CurrentTotalParticles(Bi4Files::Array{String,1}=_dirFiles())
 
     nBi4     = size(Bi4Files)[1]
 
@@ -189,7 +162,7 @@ function readBi4Npok(Bi4Files::Array{String,1}=_dirFiles())
 end
 
 ## Function to read the time at current simulation step, as in "XXXX.out"
-function readBi4Time(Bi4Files::Array{String,1}=_dirFiles())
+function readBi4_Time(Bi4Files::Array{String,1}=_dirFiles())
     nBi4     = size(Bi4Files)[1]
 
     T  = Float64
@@ -224,7 +197,7 @@ function readBi4Body(Body,typ)
     move = []
 
     if Body.bool == true
-        move  = readBi4Npok()
+        move  = readBi4Npok( )
         k     = collect(1:nBi4)
     else
         move  = start+getfield(Body, :count)-1  #Number of particles from first idp

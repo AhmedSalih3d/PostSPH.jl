@@ -7,11 +7,18 @@ pos_array  = readBi4Array(PostSPH.Points)
 vel_array  = readBi4Array(PostSPH.Vel)
 idp_array  = readBi4Array(PostSPH.Idp)
 
-# Save to vtk
-SimData101 = PostSPH.SaveVTK.SimData(Points = pos_array[101],
-                                     Idp    = idp_array[101],
-                                     Vel    = vel_array[101],
-                                     Rhop   = rhop_array[101])
 
-#Use 3d glyph filter in Paraview with 2d glyphs!
-PostSPH.SaveVTK.write_vtp("SimData101",SimData101)
+Npok                        = PostSPH.readBi4_CurrentTotalParticles()
+TypeOfParticle, NValues     = PostSPH.readBi4_NumberOfParticles()
+NTime                       = PostSPH.readBi4_Time()
+
+# Save to vtk
+for i = 1:251
+    SimData101 = PostSPH.SaveVTK.SimData(Points = pos_array[i],
+                                        Idp    = idp_array[i],
+                                        Vel    = vel_array[i],
+                                        Rhop   = rhop_array[i])
+
+    #Use 3d glyph filter in Paraview with 2d glyphs!
+    @time PostSPH.SaveVTK.write_vtp("SimData_"*lpad(string(i),4,"0"),SimData101)
+end

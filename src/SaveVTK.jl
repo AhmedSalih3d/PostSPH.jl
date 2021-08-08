@@ -8,11 +8,14 @@ module SaveVTK
     export
         write_vtp
 
+    """
+        Struct to hold simulation data
+    """
     @with_kw mutable struct SimData
-        Points::Array{Float32,2} = Array{Float32}(undef, 0, 0)
-        Idp::Array{Int32,1} = Array{Int32,1}()
-        Vel::Array{Float32,2} = Array{Float32}(undef, 0, 0)
-        Rhop::Array{Float32,1} = Array{Float32,1}()
+        Points#::Array{Float32,1} = Array{Float32}(undef, 0)
+        Idp#::Array{Int32,1} = Array{Int32,1}()
+        Vel#::Array{Float32,1} = Array{Float32}(undef, 0)
+        Rhop#::Array{Float32,1} = Array{Float32,1}()
     end
 
     """
@@ -22,7 +25,11 @@ module SaveVTK
     """
     function write_vtp(filename::String, sim_arr::SimData)
 
-        points   = sim_arr.Points
+        x        = sim_arr.Points[1:3:end]
+        y        = sim_arr.Points[2:3:end]
+        z        = sim_arr.Points[3:3:end]
+
+        points   = hcat(x,y,z)'
 
         polys = empty(MeshCell{WriteVTK.PolyData.Polys,UnitRange{Int64}}[])
         verts = empty(MeshCell{WriteVTK.PolyData.Verts,UnitRange{Int64}}[])
@@ -39,7 +46,10 @@ module SaveVTK
             vtk["Idp"]      = sim_arr.Idp
         end
         if !isempty(sim_arr.Vel)
-            velocity = sim_arr.Vel
+            vx       = sim_arr.Vel[1:3:end]
+            vy       = sim_arr.Vel[2:3:end]
+            vz       = sim_arr.Vel[3:3:end]
+            velocity = hcat(vx,vy,vz)'
             vtk["Velocity"] = velocity
         end
         if !isempty(sim_arr.Rhop)
