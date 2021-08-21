@@ -31,7 +31,8 @@ module SaveVTK
         y        = sim_arr.Points[2:3:end]
         z        = sim_arr.Points[3:3:end]
 
-        nx       = length(nx)
+        nx       = length(x)
+
 
         points   = hcat(x,y,z)'
 
@@ -68,7 +69,7 @@ module SaveVTK
                     val  = hcat(valx,valy,valz)'
                     vtk[key] = val
                 else
-                    vtk[key] = values
+                    vtk[key] = value
                 end
             end
         end

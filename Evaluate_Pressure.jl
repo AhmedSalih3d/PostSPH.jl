@@ -117,12 +117,12 @@ function WandWg(it,pos_array,rhop_array,H)
     Vel    = vel_array[it], #Wg
     Rhop   = rhop_array[it])#rhoM)
 
-    d1 = Dict("Wab"=>Wab)
-    d1["Wg"] = Wg
-    d1["rho_m"] = rhoM
+    d1["Wab"]  = Wab
+    d1["Wg"]   = Wg
+    d1["rhoM"] = rhoM
 
     #Use 3d glyph filter in Paraview with 2d glyphs!
-    PostSPH.SaveVTK.write_vtp("SimDataYay_"*lpad(string(it),4,"0"),SimData101,d1)
+    PostSPH.SaveVTK.write_vtp("SimDataYay_"*lpad(string(it),4,"0"),SimData101,extra_arrays=d1)
 end
 
 for it = 1:length(rhop_array)
