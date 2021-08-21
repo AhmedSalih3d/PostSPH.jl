@@ -3,6 +3,8 @@ using BenchmarkTools
 using LoopVectorization
 using NearestNeighbors
 using LinearAlgebra
+using Base.Threads
+using Distances
 #using Plots
 
 N     = 10^3 
@@ -50,7 +52,8 @@ pos_array  = readBi4Array(PostSPH.Points)
 vel_array  = readBi4Array(PostSPH.Vel)
 idp_array  = readBi4Array(PostSPH.Idp)
 ##
-
+Npok       = PostSPH.readBi4_CurrentTotalParticles()
+np_max     = maximum(Npok)
 
 H    = 0.028284271247
 TOH  = 2.0*H
@@ -60,9 +63,9 @@ aD   = (7.0)/(4.0*π*H^2) #2d
 mb   = 0.4;
 
 function WandWg(it,pos_array,rhop_array,H)
-    xx = pos_array[it][1:3:end]
-    yy = pos_array[it][2:3:end]
-    zz = pos_array[it][3:3:end]
+    xx = @view pos_array[it][1:3:end]
+    yy = @view pos_array[it][2:3:end]
+    zz = @view pos_array[it][3:3:end]
 
     data = hcat(xx,yy,zz)'
     
@@ -73,8 +76,9 @@ function WandWg(it,pos_array,rhop_array,H)
 
     r_mag    = Array{Array{Float32,1},1}(undef,np)
     
-    @time  for i    = 1:np
-        r_mag[i] = norm.(eachcol( data[:,i] .- data[:,idxs[i]]))
+    @time @threads for i    = 1:np
+        #r_mag[i] = norm.(eachcol( data[:,i] .- data[:,idxs[i]]))
+        r_mag[i] = colwise(Euclidean(), data[:,i],@view data[:,idxs[i]])
     end
 
     q        = r_mag./H;
@@ -85,14 +89,18 @@ function WandWg(it,pos_array,rhop_array,H)
     WabM     = map(x -> sum(Wendland.(x,aD=aD)),q)
 
     WabM = similar(Wab)
-    for i = 1:np
-        WabM[i] =  sum(Wendland.(q[i],aD=aD)./sum(mb./rhop_array[it][idxs[i]] .* Wendland.(q[i],aD=aD)))
+    @time @threads for i = 1:np
+        Wab_tmp = Wendland.(q[i],aD=aD)
+        denom   =  mb*sum(1 ./ rhop_array[it][idxs[i]] .* Wab_tmp)
+        WabM[i] =  sum(Wab_tmp./denom)
     end
+
+    rhoM     = WabM*mb;
 
     Wgx      = Array{Float32,1}(undef,np)
     Wgy      = zeros(Float32,np);#Array{Float32,1}(undef,np)
     Wgz      = Array{Float32,1}(undef,np)
-    for i = 1:np
+    @threads for i = 1:np
         Wgx[i] = sum(WendlandDerivative.(q[i],aD=aD) .* (data[1,i] .- data[1,idxs[i]]) ./ (r_mag[i] * H .+ ϵ ))
         #Wgy[i] = sum(WendlandDerivative.(q[i],aD=aD) .* (data[2,i] .- data[2,idxs[i]]) ./ (r_mag[i] .+ H ))
         Wgz[i] = sum(WendlandDerivative.(q[i],aD=aD) .* (data[3,i] .- data[3,idxs[i]]) ./ (r_mag[i] * H .+ ϵ ))
@@ -105,12 +113,16 @@ function WandWg(it,pos_array,rhop_array,H)
     Wg[3:3:end] = Wgz   
 
     SimData101 = PostSPH.SaveVTK.SimData(Points = pos_array[it],
-    Idp    = Wab,
-    Vel    = Wg,
-    Rhop   = WabM*mb)
+    Idp    = idp_array[it], #Wab,
+    Vel    = vel_array[it], #Wg
+    Rhop   = rhop_array[it])#rhoM)
+
+    d1 = Dict("Wab"=>Wab)
+    d1["Wg"] = Wg
+    d1["rho_m"] = rhoM
 
     #Use 3d glyph filter in Paraview with 2d glyphs!
-    PostSPH.SaveVTK.write_vtp("SimDataYay_"*lpad(string(it),4,"0"),SimData101)
+    PostSPH.SaveVTK.write_vtp("SimDataYay_"*lpad(string(it),4,"0"),SimData101,d1)
 end
 
 for it = 1:length(rhop_array)

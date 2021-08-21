@@ -23,11 +23,15 @@ module SaveVTK
 
     Saves a polydata file (.vtp) given a filename, a 2xN point array and and 1xN attribute array.
     """
-    function write_vtp(filename::String, sim_arr::SimData)
+    function write_vtp(filename::String, sim_arr::SimData;extra_arrays=Dict())
+
+        
 
         x        = sim_arr.Points[1:3:end]
         y        = sim_arr.Points[2:3:end]
         z        = sim_arr.Points[3:3:end]
+
+        nx       = length(nx)
 
         points   = hcat(x,y,z)'
 
@@ -54,6 +58,19 @@ module SaveVTK
         end
         if !isempty(sim_arr.Rhop)
             vtk["Rhop"]     = sim_arr.Rhop
+        end
+        if !isempty(extra_arrays)
+            for (key,value) in extra_arrays
+                if length(value) > nx
+                    valx = value[1:3:end]
+                    valy = value[2:3:end]
+                    valz = value[3:3:end]
+                    val  = hcat(valx,valy,valz)'
+                    vtk[key] = val
+                else
+                    vtk[key] = values
+                end
+            end
         end
 
         vtk_save(vtk)
