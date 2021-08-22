@@ -61,6 +61,7 @@ aD   = (7.0)/(4.0*π*H^2) #2d
 
 ϵ    = 1e-6;
 mb   = 0.4;
+d1 = Dict{String,Array}()
 
 function WandWg(it,pos_array,rhop_array,H)
     xx = @view pos_array[it][1:3:end]
