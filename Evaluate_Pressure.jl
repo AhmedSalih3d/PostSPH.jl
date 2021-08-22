@@ -47,10 +47,11 @@ using PostSPH
 
 # Load all data in
 cd(raw"D:\DualSPHysics_v5.0\examples\main\03_MovingSquare\CaseMovingSquare_out\data")
-rhop_array = readBi4Array(PostSPH.Rhop)
-pos_array  = readBi4Array(PostSPH.Points)
-vel_array  = readBi4Array(PostSPH.Vel)
-idp_array  = readBi4Array(PostSPH.Idp)
+id_range   = (1501,4101)
+rhop_array = readBi4Array(PostSPH.Rhop,id_range)
+pos_array  = readBi4Array(PostSPH.Points,id_range)
+vel_array  = readBi4Array(PostSPH.Vel,id_range)
+idp_array  = readBi4Array(PostSPH.Idp,id_range)
 ##
 Npok       = PostSPH.readBi4_CurrentTotalParticles()
 np_max     = maximum(Npok)

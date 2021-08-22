@@ -69,26 +69,27 @@ end
 #readBi4Array(typ::Cat,Bi4Files::Array{String,1}=_dirFiles()) = readBi4Array(typ, false, Bi4Files)
 #readBi4Array(typ::Cat,Bi4Files::Array{String,1}) = readBi4Array(typ, false, Bi4Files)
 readBi4Array(typ::Cat,Bi4Files::String) = readBi4Array(typ, [Bi4Files])
-function readBi4Array(typ::Cat,Bi4Files::Array{String,1}=_dirFiles())
+readBi4Array(typ::Cat,id_range::Tuple,Bi4Files::Array{String,1}=_dirFiles())  = readBi4Array(typ,Bi4Files, id_range)
+function readBi4Array(typ::Cat,Bi4Files::Array{String,1}=_dirFiles(), id_range=tuple())
 
     nBi4     = size(Bi4Files)[1]
 
     key    = searchKeyBi4[typ].key
+    T      = catTypeBi4[typ]
     offset = searchKeyBi4[typ].offset
     ncol   = catColBi4[typ]
-    T      = catTypeBi4[typ]
+    
 
-    # THIS BREAKS SAVE VTK
     j = Vector{Array{T,1}}(undef,nBi4)
     Threads.@threads for i = 1:nBi4
-        j[i],~ = _readBi4(Bi4Files[i],key,offset,T,ncol)
+        j[i],~ = _readBi4(Bi4Files[i],key,offset,T,ncol,id_range)
     end
 
     return j
 end
 
-
-function _readBi4(file::String,key,offset,T,ncol)
+#idps is range with julia +1
+function _readBi4(file::String,key,offset,T,ncol,id_range=tuple())
 
     # Import a full bi4 file as Array{UInt8,1}
     ft = open(file,read=true)
@@ -99,7 +100,6 @@ function _readBi4(file::String,key,offset,T,ncol)
     # first occurence, then adding offset
     startPos = Base._searchindex(rf, key, 1) + offset #1 byte offset
 
-    #+1 due to hexeditor/julia?. "n id start" and "n id end"
     nid_s = startPos + 1  + sizeof(Int64)
     nid_e = nid_s    - 1  + sizeof(Int32)
 
@@ -110,8 +110,13 @@ function _readBi4(file::String,key,offset,T,ncol)
     # Multiply with 4 here since UInt8 size, times number of particles, times
     # times number of columns gives the correct indices in the rf array for
     # Float32, Int32 etc.
-    did_s = nid_e + 1 + sizeof(Int32)
-    did_e = did_s - 1  + 4*n*ncol
+    if isempty(id_range)
+        did_s = nid_e + 1 + sizeof(Int32)
+        did_e = did_s - 1  + sizeof(T)*n*ncol #4
+    else
+        did_s = nid_e + 1 + sizeof(Int32) + sizeof(T)*id_range[1]
+        did_e = did_s - 1  + sizeof(T)*id_range[2]*ncol
+    end
 
     # Reinterpret the data as the specified data type, extract the relevant
     # snip of Array{UInt8,1} in "rf"
