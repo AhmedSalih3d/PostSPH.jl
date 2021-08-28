@@ -7,12 +7,12 @@ using Base.Threads
 using Distances
 #using Plots
 
-N     = 10^3 
-q     = rand(0:rand():2,N)
-rho   = rand(990:rand():1010,N)
+# N     = 10^3 
+# q     = rand(0:rand():2,N)
+# rho   = rand(990:rand():1010,N)
 
-x     = similar(rho)
-P     = similar(rho)
+# x     = similar(rho)
+# P     = similar(rho)
 
 function EOSSimple(rho;c0=100.0,rho0=1000.0)
     return  c0^2*(rho-rho0)
@@ -39,19 +39,19 @@ function evaluateFunc!(func,array,arr)
     @tturbo @. arr = func(array)
 end
 
-@benchmark evaluateFunc!($EOSSimple,$rho,$P)
-@benchmark evaluateFunc!($EOS,$rho,$P)
+# @benchmark evaluateFunc!($EOSSimple,$rho,$P)
+# @benchmark evaluateFunc!($EOS,$rho,$P)
 
 ## EXAMPLE
 using PostSPH
 
 # Load all data in
 cd(raw"D:\DualSPHysics_v5.0\examples\main\03_MovingSquare\CaseMovingSquare_out\data")
-id_range   = (1501,4101)
-rhop_array = readBi4Array(PostSPH.Rhop,id_range)
-pos_array  = readBi4Array(PostSPH.Points,id_range)
-vel_array  = readBi4Array(PostSPH.Vel,id_range)
-idp_array  = readBi4Array(PostSPH.Idp,id_range)
+id_range   = ()#(1501,4101)
+rhop_array = readBi4Array(PostSPH.Rhop)
+pos_array  = readBi4Array(PostSPH.Points)
+vel_array  = readBi4Array(PostSPH.Vel)
+idp_array  = readBi4Array(PostSPH.Idp)
 ##
 Npok       = PostSPH.readBi4_CurrentTotalParticles()
 np_max     = maximum(Npok)
@@ -59,22 +59,28 @@ np_max     = maximum(Npok)
 H    = 0.028284271247
 TOH  = 2.0*H
 aD   = (7.0)/(4.0*π*H^2) #2d
-
 ϵ    = 1e-6;
 mb   = 0.4;
 d1 = Dict{String,Array}()
 
-function WandWg(it,pos_array,rhop_array,H)
+function constructData(pos_array,it)
     xx = @view pos_array[it][1:3:end]
     yy = @view pos_array[it][2:3:end]
     zz = @view pos_array[it][3:3:end]
-
     data = hcat(xx,yy,zz)'
-    
-    np = length(xx)
 
+    return data
+end
+
+function FindNeighbours(data)
     balltree = BallTree(data)
-    idxs     = inrange(balltree, data, TOH, true)
+    idxs     = inrange(balltree, data, TOH, true) #can be set to false
+
+    return idxs
+end
+
+function CalculateRmag(data,idxs)
+    np = length(idxs)
 
     r_mag    = Array{Array{Float32,1},1}(undef,np)
     
@@ -83,41 +89,91 @@ function WandWg(it,pos_array,rhop_array,H)
         r_mag[i] = colwise(Euclidean(), data[:,i],@view data[:,idxs[i]])
     end
 
+    return r_mag
+end
+
+function CalculateQClamp(r_mag,H)
     q        = r_mag./H;
     clamp!.(q,0.0,2.0)
 
-    Wab      = map(x -> sum(Wendland.(x,aD=aD)),q)
+    return q
+end
 
-    WabM     = map(x -> sum(Wendland.(x,aD=aD)),q)
+function CalculateShephardFilterMass(Wab,it,q,idxs)
 
-    WabM = similar(Wab)
+    np    = length(idxs)
+
+    WabM  = similar(Wab)
     @time @threads for i = 1:np
-        Wab_tmp = Wendland.(q[i],aD=aD)
+        Wab_tmp =  Wendland.(q[i],aD=aD)
         denom   =  mb*sum(1 ./ rhop_array[it][idxs[i]] .* Wab_tmp)
         WabM[i] =  sum(Wab_tmp./denom)
     end
-
     rhoM     = WabM*mb;
+
+    return rhoM
+end
+
+function CalculateXIJ(data,idxs,r_mag)
+    np = length(idxs)
+
+    xij      = Array{Array{Float32,1},1}(undef,np)
+    yij      = Array{Array{Float32,1},1}(undef,np)
+    zij      = Array{Array{Float32,1},1}(undef,np)
+    @threads for i = 1:np
+        xij[i] = (data[1,i] .- data[1,idxs[i]]) ./ (r_mag[i] * H .+ ϵ )
+        yij[i] = (data[2,i] .- data[2,idxs[i]]) ./ (r_mag[i] * H .+ ϵ )
+        zij[i] = (data[3,i] .- data[3,idxs[i]]) ./ (r_mag[i] * H .+ ϵ )
+    end
+
+    return xij,yij,zij
+end
+
+function CalculateGradient(q,xij,zij)
+
+    np       = length(q)
 
     Wgx      = Array{Float32,1}(undef,np)
     Wgy      = zeros(Float32,np);#Array{Float32,1}(undef,np)
     Wgz      = Array{Float32,1}(undef,np)
     @threads for i = 1:np
-        Wgx[i] = sum(WendlandDerivative.(q[i],aD=aD) .* (data[1,i] .- data[1,idxs[i]]) ./ (r_mag[i] * H .+ ϵ ))
-        #Wgy[i] = sum(WendlandDerivative.(q[i],aD=aD) .* (data[2,i] .- data[2,idxs[i]]) ./ (r_mag[i] .+ H ))
-        Wgz[i] = sum(WendlandDerivative.(q[i],aD=aD) .* (data[3,i] .- data[3,idxs[i]]) ./ (r_mag[i] * H .+ ϵ ))
+        Wgx[i] = sum(WendlandDerivative.(q[i],aD=aD)  .*  xij[i])
+        #Wgy[i] = sum(WendlandDerivative.(q[i],aD=aD) .*  yij[i])
+        Wgz[i] = sum(WendlandDerivative.(q[i],aD=aD)  .*  zij[i])
     end
-    
+
     Wg      = zeros(Float32,3*np)
     
     Wg[1:3:end] = Wgx
     Wg[2:3:end] = Wgy
-    Wg[3:3:end] = Wgz   
+    Wg[3:3:end] = Wgz 
+    
+    return Wg
+end
+
+function WandWg(it,pos_array,rhop_array,H)
+
+    data  = constructData(pos_array,it)
+
+    idxs  = FindNeighbours(data)
+
+    r_mag = CalculateRmag(data,idxs)
+
+    q     =  CalculateQClamp(r_mag,H)
+
+    Wab   = map(x -> sum(Wendland.(x,aD=aD)),q)
+
+    rhoM  = CalculateShephardFilterMass(Wab,it,q,idxs)
+
+    xij,_,zij = CalculateXIJ(data,idxs,r_mag)
+
+    
+    Wg = CalculateGradient(q,xij,zij)
 
     SimData101 = PostSPH.SaveVTK.SimData(Points = pos_array[it],
-    Idp    = idp_array[it], #Wab,
-    Vel    = vel_array[it], #Wg
-    Rhop   = rhop_array[it])#rhoM)
+    Idp    = idp_array[it], 
+    Vel    = vel_array[it], 
+    Rhop   = rhop_array[it])
 
     d1["Wab"]  = Wab
     d1["Wg"]   = Wg
@@ -127,6 +183,14 @@ function WandWg(it,pos_array,rhop_array,H)
     PostSPH.SaveVTK.write_vtp("SimDataYay_"*lpad(string(it),4,"0"),SimData101,extra_arrays=d1)
 end
 
-for it = 1:length(rhop_array)
-    @time WandWg(it,pos_array,rhop_array,H)
+function WandWgOuter(pos_array,rhop_array,H)
+    p   = pos_array;
+    r   = rhop_array
+    for it = 1:length(rhop_array)
+        println(it)
+        @time WandWg(it,p,r,H)
+    end
 end
+
+@time WandWgOuter(pos_array,rhop_array,H)
+
