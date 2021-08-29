@@ -26,12 +26,12 @@ function EOS(rho;c0=100.0,gamma=7,rho0=1000.0)
 end
 
 # CubicSpline not easy to implement.
-function Wendland(q;aD=1.0)
+function Wendland(q,aD)
     
     return aD*(1.0-q/2.0)^4 * (2.0*q+1.0)
 end
 
-function WendlandDerivative(q;aD=1.0)
+function WendlandDerivative(q,aD)
     
     return aD*((5.0/8.0)*q*(q-2.0)^3)
 end
@@ -57,11 +57,11 @@ idp_array  = readBi4Array(PostSPH.Idp)
 Npok       = PostSPH.readBi4_CurrentTotalParticles()
 np_max     = maximum(Npok)
 
-H    = 0.028284271247
-TOH  = 2.0*H
-aD   = (7.0)/(4.0*π*H^2) #2d
-ϵ    = 1e-6;
-mb   = 0.4;
+const H    = 0.028284271247
+const TOH  = 2.0*H
+const aD   = (7.0)/(4.0*π*H^2) #2d
+const ϵ    = 1e-6;
+const mb   = 0.4;
 d1 = Dict{String,Array}()
 
 function constructData(pos_array,it)
@@ -106,7 +106,7 @@ function CalculateShephardFilterMass(Wab,it,q,idxs)
 
     WabM  = similar(Wab)
     @threads for i = 1:np
-        Wab_tmp =  Wendland.(q[i],aD=aD)
+        Wab_tmp =  Wendland.(q[i],aD)
         denom   =  mb*sum(1 ./ rhop_array[it][idxs[i]] .* Wab_tmp)
         WabM[i] =  sum(Wab_tmp./denom)
     end
@@ -152,7 +152,7 @@ function CalculateGradient(q,xij,zij)
     Wg       = zeros(Float32,3*np)
 
     @threads for i = 1:np
-        dWdq   = WendlandDerivative.(q[i],aD=aD)
+        dWdq   = WendlandDerivative.(q[i],aD)
         offset = i+(2*(i-1))
         Wg[offset]   = sum(dWdq .*  xij[i])
         #Wgy[i] = sum(WendlandDerivative.(q[i],aD=aD) .*  yij[i])
@@ -172,7 +172,7 @@ function WandWg(it,pos_array,rhop_array,H)
 
     q     = CalculateQClamp(r_mag,H)
 
-    Wab   = map(x -> sum(Wendland.(x,aD=aD)),q)
+    Wab   = map(x -> sum(Wendland.(x,aD)),q)
 
     rhoM  = CalculateShephardFilterMass(Wab,it,q,idxs)
 
