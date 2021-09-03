@@ -64,10 +64,10 @@ const ϵ    = 1e-6;
 const mb   = 0.4;
 d1 = Dict{String,Array}()
 
-function constructData(pos_array,it)
-    xx = @view pos_array[it][1:3:end]
-    yy = @view pos_array[it][2:3:end]
-    zz = @view pos_array[it][3:3:end]
+function constructData(pos_array)
+    xx = @view pos_array[1:3:end]
+    yy = @view pos_array[2:3:end]
+    zz = @view pos_array[3:3:end]
     data = hcat(xx,yy,zz)'
 
     return data
@@ -100,14 +100,14 @@ function CalculateQClamp(r_mag,H)
     return q
 end
 
-function CalculateShephardFilterMass(Wab,it,q,idxs)
+function CalculateShephardFilterMass(Wab,rhop_array,q,idxs)
 
     np    = length(idxs)
 
     WabM  = similar(Wab)
     @threads for i = 1:np
         Wab_tmp =  Wendland.(q[i],aD)
-        denom   =  mb*sum(1 ./ rhop_array[it][idxs[i]] .* Wab_tmp)
+        denom   =  mb*sum(1 ./ rhop_array[idxs[i]] .* Wab_tmp)
         WabM[i] =  sum(Wab_tmp./denom)
     end
     rhoM     = WabM*mb;
@@ -162,9 +162,9 @@ function CalculateGradient(q,xij,zij)
     return Wg
 end
 
-function WandWg(it,pos_array,rhop_array,H)
+function WandWg(it,pos_array,rhop_array,idp_array,vel_array,H)
 
-    data  = constructData(pos_array,it)
+    data  = constructData(pos_array)
 
     idxs  = FindNeighbours(data)
 
@@ -174,17 +174,17 @@ function WandWg(it,pos_array,rhop_array,H)
 
     Wab   = map(x -> sum(Wendland.(x,aD)),q)
 
-    rhoM  = CalculateShephardFilterMass(Wab,it,q,idxs)
+    rhoM  = CalculateShephardFilterMass(Wab,rhop_array,q,idxs)
 
     xij,_,zij = CalculateXIJ(data,idxs,r_mag)
 
     
     Wg = CalculateGradient(q,xij,zij);
 
-    SimData101 = PostSPH.SaveVTK.SimData(Points = pos_array[it],
-    Idp    = idp_array[it], 
-    Vel    = vel_array[it], 
-    Rhop   = rhop_array[it])
+    SimData101 = PostSPH.SaveVTK.SimData(Points = pos_array,
+    Idp    = idp_array, 
+    Vel    = vel_array, 
+    Rhop   = rhop_array)
 
     d1["Wab"]  = Wab
     d1["Wg"]   = Wg
@@ -196,10 +196,12 @@ end
 
 function WandWgOuter(pos_array,rhop_array,H)
     p   = pos_array;
-    r   = rhop_array
+    r   = rhop_array;
+    id  = idp_array;
+    v   = vel_array;
     for it = 1:length(rhop_array)
         println(it)
-        @time WandWg(it,p,r,H)
+        @time WandWg(it,p[it],r[it],id[it],v[it],H)
     end
 end
 
