@@ -6,6 +6,8 @@ using LinearAlgebra
 using Base.Threads
 using Distances
 using ProfileView
+using StaticArrays
+using CellListMap
 #using Plots
 
 # N     = 10^3 
@@ -209,3 +211,96 @@ end
 
 WandWgOuter(pos_array,rhop_array,H)
 
+
+###  
+using CellListMap
+using StaticArrays
+
+# System properties
+N = 100_000
+sides = [250,250,250]
+cutoff = 10
+
+# Particle positions
+x = [ sides .* rand(3) for i in 1:N ]
+
+# Initialize linked lists and box structures
+box = Box(limits(x),cutoff)
+cl = CellList(x,box)
+
+mass = rand(N)
+
+# Function to be evalulated for each pair: build distance histogram
+function calc_forces!(x,y,i,j,d2,mass,forces)
+    G = 9.8*mass[i]*mass[j]/d2
+    d = sqrt(d2)
+    df = (G/d)*(x - y)
+    forces[i] = forces[i] - df
+    forces[j] = forces[j] + df
+    return forces
+end
+
+# Initialize and preallocate forces
+forces = [ zeros(SVector{3,Float64}) for i in 1:N ]
+
+# Run pairwise computation
+map_pairwise!(
+    (x,y,i,j,d2,forces) -> calc_forces!(x,y,i,j,d2,mass,forces),
+    forces,box,cl
+)
+
+## Own play
+pos = deepcopy(pos_array[1])
+deleteat!(pos,2:3:length(pos))
+x   = reinterpret(SVector{2, eltype(pos)}, pos)
+
+N   = length(x)
+
+
+box = Box(limits(x),TOH)
+cl = CellList(x,box)
+
+# Function to be evalulated for each pair: build distance histogram
+function calc_q!(x,y,i,j,d2,H,aD,q_arr)
+    d = sqrt(d2)
+    q_arr[i] += Wendland(d/H,aD)
+    q_arr[j] += Wendland(d/H,aD)
+    return q_arr
+end
+
+function calc_grad!(x,y,i,j,d2,H,aD,idx,g_arr)
+    d   = sqrt(d2)
+    q   = d/H
+    tmp = (WendlandDerivative(q,aD)/(d+1e-6 ))*(1/H)
+    g_arr[i] += tmp*(x[idx]-y[idx])
+    g_arr[j] += tmp*(y[idx]-x[idx])
+    return g_arr
+end
+
+# Initialize and preallocate forces
+q_arr = zeros(Float32,N) #.+ Wendland(0.0,aD)#[ zeros(SVector{1,Float64}) for i in 1:N ]
+
+
+# Run pairwise computation
+map_pairwise!(
+    (x,y,i,j,d2,q_arr) -> calc_q!(x,y,i,j,d2,TOH*0.5,aD,q_arr),
+    q_arr,box,cl
+)
+
+@time q_arr .= q_arr .+ Wendland(0.0,aD) #Since own self is not found
+
+
+
+gx = zeros(Float32,N)
+gz = zeros(Float32,N)
+idx = 1;
+idz = 2;
+map_pairwise!(
+    (x,y,i,j,d2,gx) -> calc_grad!(x,y,i,j,d2,TOH*0.5,aD,idx,gx),
+    gx,box,cl
+)
+
+map_pairwise!(
+    (x,y,i,j,d2,gz) -> calc_grad!(x,y,i,j,d2,TOH*0.5,aD,idz,gz),
+    gz,box,cl
+)
