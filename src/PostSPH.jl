@@ -44,7 +44,6 @@ const searchKeyBi4 =
     Dict{Cat,NamedTuple}(Idp => IdpKey, Points => PosKey, Vel => VelKey, Rhop => RhopKey)
 const catTypeBi4 =
     Dict{Cat,DataType}(Idp => Int32, Points => Float32, Vel => Float32, Rhop => Float32)
-const catArrayBi4 = Dict{Cat,Int64}(Idp => 1, Points => 2, Vel => 2, Rhop => 1)
 const catColBi4 = Dict{Cat,Int64}(Idp => 1, Points => 3, Vel => 3, Rhop => 1)
 
 ##Lists files in directory and only returns applicable files, ie. "Part_XXXX.bi4"
