@@ -59,18 +59,14 @@ end
 readBi4Array(typ::Cat, Bi4Files::String) = readBi4Array(typ, [Bi4Files])
 function readBi4Array(typ::Cat, Bi4Files::Vector{String} = _dirFiles())
 
-    #nBi4 = size(Bi4Files)[1]
-
     key    = searchKeyBi4[typ].key
     offset = searchKeyBi4[typ].offset
     T      = catTypeBi4[typ]
     ncol   = catColBi4[typ]
    
-
-    # THIS BREAKS SAVE VTK
-    #j = Vector{Vector{T}}(undef, nBi4)
     j  = similar(Vector{Vector{T}},axes(Bi4Files))
-    Threads.@threads for i in eachindex(Bi4Files)
+
+    Threads.@threads for i in eachindex(j)
         j[i], ~ = _readBi4(Bi4Files[i], key, offset, T, ncol)
     end
 
@@ -113,11 +109,10 @@ end
 
 function readBi4_NumberOfParticles(Bi4Files::Vector{String} = _dirFiles())
 
-    @time nBi4 = size(Bi4Files)[1]
-    @time j = Vector{Vector{Int32}}(undef, nBi4)
+    j  = similar(Vector{Vector{Int32}},axes(Bi4Files))
 
     ParticleString = ["CaseNp", "CaseNfixed", "CaseNmoving", "CaseNfloat", "CaseNfluid"]
-    for i = 1:nBi4
+    for i in eachindex(j)
         ft = open(Bi4Files[i], read = true)
         j_inner = zeros(Int32, length(ParticleString))
         for k in eachindex(j_inner)
@@ -135,8 +130,6 @@ end
 function readBi4_CurrentTotalParticles(Bi4Files::Vector{String} = _dirFiles())
 
     nBi4 = size(Bi4Files)[1]
-
-    j = Vector{Vector{Int32}}(undef, nBi4)
 
     ParticleString = "Npok"
     j = zeros(Int32, (nBi4,))
