@@ -14,7 +14,7 @@ NTime = PostSPH.readBi4_Time()
 
 # Save to vtk
 for i = 1:201
-    SimData101 = PostSPH.SaveVTK.SimData(
+    SimData101 = PostSPH.SaveVTK.SimData3(
         Points = pos_array[i],
         Idp = idp_array[i],
         Vel = vel_array[i],

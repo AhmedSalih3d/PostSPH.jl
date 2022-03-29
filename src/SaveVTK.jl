@@ -10,11 +10,11 @@ export write_vtp
 """
     Struct to hold simulation data
 """
-@with_kw mutable struct SimData
-    Points::Any#::Array{Float32,1} = Array{Float32}(undef, 0)
-    Idp::Any#::Array{Int32,1} = Array{Int32,1}()
-    Vel::Any#::Array{Float32,1} = Array{Float32}(undef, 0)
-    Rhop::Any#::Array{Float32,1} = Array{Float32,1}()
+@with_kw mutable struct SimData{T,N}
+    Points::Vector{T}
+    Idp::Vector{N}
+    Vel::Vector{T}
+    Rhop::Vector{T}
 end
 
 """
