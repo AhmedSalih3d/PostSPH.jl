@@ -68,7 +68,7 @@ function readBi4Array(typ::Cat, Bi4Files::Vector{String} = _dirFiles())
     T = catTypeBi4[typ]
 
     # THIS BREAKS SAVE VTK
-    j = Vector{Array{T,1}}(undef, nBi4)
+    j = Vector{Vector{T}}(undef, nBi4)
     Threads.@threads for i = 1:nBi4
         j[i], ~ = _readBi4(Bi4Files[i], key, offset, T, ncol)
     end
@@ -110,11 +110,11 @@ function _readBi4(file::String, key, offset, T, ncol)
 end
 
 
-function readBi4_NumberOfParticles(Bi4Files::Array{String,1} = _dirFiles())
+function readBi4_NumberOfParticles(Bi4Files::Vector{String} = _dirFiles())
 
     nBi4 = size(Bi4Files)[1]
 
-    j = Vector{Array{Int32,1}}(undef, nBi4)
+    j = Vector{Vector{Int32}}(undef, nBi4)
 
     ParticleString = ["CaseNp", "CaseNfixed", "CaseNmoving", "CaseNfloat", "CaseNfluid"]
     for i = 1:nBi4
@@ -132,11 +132,11 @@ function readBi4_NumberOfParticles(Bi4Files::Array{String,1} = _dirFiles())
 end
 
 #Npok is the current number of actual particles in the bi4 file
-function readBi4_CurrentTotalParticles(Bi4Files::Array{String,1} = _dirFiles())
+function readBi4_CurrentTotalParticles(Bi4Files::Vector{String} = _dirFiles())
 
     nBi4 = size(Bi4Files)[1]
 
-    j = Vector{Array{Int32,1}}(undef, nBi4)
+    j = Vector{Vector{Int32}}(undef, nBi4)
 
     ParticleString = "Npok"
     j = zeros(Int32, (nBi4,))
@@ -151,7 +151,7 @@ function readBi4_CurrentTotalParticles(Bi4Files::Array{String,1} = _dirFiles())
 end
 
 ## Function to read the time at current simulation step, as in "XXXX.out"
-function readBi4_Time(Bi4Files::Array{String,1} = _dirFiles())
+function readBi4_Time(Bi4Files::Vector{String} = _dirFiles())
     nBi4 = size(Bi4Files)[1]
 
     T = Float64
