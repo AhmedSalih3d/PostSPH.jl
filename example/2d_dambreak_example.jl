@@ -2,7 +2,7 @@ using PostSPH
 
 # Load all data in
 cd(raw"C:\Users\Ahmed Salih\Documents\DualSPHysics_v5.0\examples\main\01_DamBreak\CaseDambreakVal2D_out\data")
-@btime rhop_array = readBi4Array(PostSPH.Rhop)
+rhop_array = readBi4Array(PostSPH.Rhop)
 pos_array = readBi4Array(PostSPH.Points)
 vel_array = readBi4Array(PostSPH.Vel)
 idp_array = readBi4Array(PostSPH.Idp)
