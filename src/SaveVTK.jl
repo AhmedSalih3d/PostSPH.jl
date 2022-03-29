@@ -22,9 +22,9 @@ Saves a polydata file (.vtp) given a filename, a 2xN point array and and 1xN att
 """
 function write_vtp(filename::String, sim_arr::SimData)
 
-    x = sim_arr.Points[1:3:end]
-    y = sim_arr.Points[2:3:end]
-    z = sim_arr.Points[3:3:end]
+    x = @view sim_arr.Points[1:3:end]
+    y = @view sim_arr.Points[2:3:end]
+    z = @view sim_arr.Points[3:3:end]
 
     points = hcat(x, y, z)'
 
