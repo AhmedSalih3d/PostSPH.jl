@@ -1,8 +1,6 @@
 module SaveVTK
 
-using StaticArrays
 using WriteVTK
-using Random
 using Parameters
 
 export write_vtp

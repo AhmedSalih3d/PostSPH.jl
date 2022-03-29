@@ -62,7 +62,7 @@ end
 #readBi4Array(typ::Cat,Bi4Files::Array{String,1}=_dirFiles()) = readBi4Array(typ, false, Bi4Files)
 #readBi4Array(typ::Cat,Bi4Files::Array{String,1}) = readBi4Array(typ, false, Bi4Files)
 readBi4Array(typ::Cat, Bi4Files::String) = readBi4Array(typ, [Bi4Files])
-function readBi4Array(typ::Cat, Bi4Files::Array{String,1} = _dirFiles())
+function readBi4Array(typ::Cat, Bi4Files::Vector{String} = _dirFiles())
 
     nBi4 = size(Bi4Files)[1]
 
