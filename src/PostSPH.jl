@@ -2,12 +2,7 @@ __precompile__()
 
 module PostSPH
 
-using Printf #To construct string message easily
-using StaticArrays
-
 #Add to project.toml manually: https://discourse.julialang.org/t/update-project-toml-manually/32477
-
-include("ReadXML.jl")
 include("SaveVTK.jl")
 
 export Cat,
@@ -174,48 +169,6 @@ function readBi4_Time(Bi4Files::Array{String,1} = _dirFiles())
         j[i] = read(ft, T)
         close(ft)
     end
-    return j
-end
-
-#Function to only find specific Idps
-#for MovingSquare example "Bodies[2][1]""
-#In the for loop the first index is the index of the relevant "typ" array,
-#the second index is the sorting of this "typ" array corresponding to the "idp"
-#array and "start:move" are the number of particles defined by the "Body", where
-#0 and 1 indexing from C++ and Julia differences has been taken into account.
-function readBi4Body(Body, typ)
-    start = getfield(Body, :beg) + 1    #First idp
-
-    idp_vec = readBi4Array(Idp)
-    val_vec = readBi4Array(typ)
-
-    nBi4 = length(idp_vec)
-
-    k = []
-    move = []
-
-    if Body.bool == true
-        move = readBi4Npok()
-        k = collect(1:nBi4)
-    else
-        move = start + getfield(Body, :count) - 1  #Number of particles from first idp
-        k = ones(Int, nBi4)
-    end
-
-
-    j = similar(val_vec)
-
-    if typ == Idp || typ == Rhop
-        for i = 1:length(j)
-            j[i] = val_vec[i][sortperm(idp_vec[i])][start:move[k[i]]]
-        end
-    else
-        for i = 1:length(j)
-            id = sortperm(idp_vec[i])
-            j[i] = val_vec[i][:, id][:, start:move[k[i]]]
-        end
-    end
-
     return j
 end
 
