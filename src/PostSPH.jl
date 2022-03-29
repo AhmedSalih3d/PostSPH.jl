@@ -62,10 +62,11 @@ function readBi4Array(typ::Cat, Bi4Files::Vector{String} = _dirFiles())
 
     nBi4 = size(Bi4Files)[1]
 
-    key = searchKeyBi4[typ].key
+    key    = searchKeyBi4[typ].key
     offset = searchKeyBi4[typ].offset
-    ncol = catColBi4[typ]
-    T = catTypeBi4[typ]
+    T      = catTypeBi4[typ]
+    ncol   = catColBi4[typ]
+   
 
     # THIS BREAKS SAVE VTK
     j = Vector{Vector{T}}(undef, nBi4)
@@ -77,7 +78,7 @@ function readBi4Array(typ::Cat, Bi4Files::Vector{String} = _dirFiles())
 end
 
 
-function _readBi4(file::String, key, offset, T, ncol)
+function _readBi4(file::String, key::Vector{UInt8}, offset::Int, T::DataType, ncol::Int)
 
     # Import a full bi4 file as Array{UInt8,1}
     ft = open(file, read = true)
