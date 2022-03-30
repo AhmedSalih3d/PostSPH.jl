@@ -46,10 +46,10 @@ const catColBi4    = Dict{Cat,Int64}(Idp => 1, Points => 3, Vel => 3, Rhop => 1)
 
 ##Lists files in directory and only returns applicable files, ie. "Part_XXXX.bi4"
 # first_file bug
-function _dirFiles()
+function _dirFiles(rgxPat::Regex=Regex("Part_\\d{4}.bi4"))
     files = readdir()
     #Operation on dirFiles instantly
-    filter!(x -> occursin(r"Part_\d{4}.bi4", x), files)
+    filter!(x -> occursin(rgxPat, x), files)
     return files
 end
 
