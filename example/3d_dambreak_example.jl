@@ -2,10 +2,10 @@
 
 # Load all data in
 cd(raw"C:\Users\Ahmed Salih\Documents\DualSPHysics_v5.0\examples\main\01_DamBreak\CaseDambreak_out\data")
-rhop_array = readBi4Array(PostSPH.Rhop)
-pos_array  = readBi4Array(PostSPH.Points)
-vel_array  = readBi4Array(PostSPH.Vel)
-idp_array  = readBi4Array(PostSPH.Idp)
+rhop_array = PostSPH.readBi4Array(PostSPH.Rhop)
+pos_array  = PostSPH.readBi4Array(PostSPH.Points)
+vel_array  = PostSPH.readBi4Array(PostSPH.Vel)
+idp_array  = PostSPH.readBi4Array(PostSPH.Idp)
 
 
 Npok = PostSPH.readBi4_CurrentTotalParticles()

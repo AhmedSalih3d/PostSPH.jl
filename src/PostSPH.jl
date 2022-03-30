@@ -64,8 +64,8 @@ function readBi4Array(typ::Cat, Bi4Files::Vector{String} = _dirFiles())
    
     j  = similar(Vector{Vector{T}},axes(Bi4Files))
 
-    for i in eachindex(j)
-        println("Iteration: " * i * "|Reading: " * Bi4Files[i])
+    Base.Threads.@threads for i in eachindex(j)
+        println("$typ | Iteration: " * lpad(string(i), 4, "0") * "|Reading: " * Bi4Files[i])
         j[i], ~ = _readBi4(Bi4Files[i], key, offset, T, ncol)
     end
 
