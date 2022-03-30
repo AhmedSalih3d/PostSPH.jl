@@ -46,10 +46,10 @@ const catColBi4    = Dict{Cat,Int64}(Idp => 1, Points => 3, Vel => 3, Rhop => 1)
 
 ##Lists files in directory and only returns applicable files, ie. "Part_XXXX.bi4"
 # first_file bug
-function _dirFiles(strFilter::String = "Part_\\d{4}.bi4")
+function _dirFiles()
     files = readdir()
     #Operation on dirFiles instantly
-    filter!(x -> occursin(Regex(strFilter), x), files)
+    filter!(x -> occursin(r"Part_\d{4}.bi4", x), files)
     return files
 end
 
@@ -65,7 +65,7 @@ function readBi4Array(typ::Cat, Bi4Files::Vector{String} = _dirFiles())
     j  = similar(Vector{Vector{T}},axes(Bi4Files))
 
     Threads.@threads for i in eachindex(j)
-        println("Iteration: " * i * "| Reading: " * Bi4Files[i])
+        println("Iteration: " * i * "|Reading: " * Bi4Files[i])
         j[i], ~ = _readBi4(Bi4Files[i], key, offset, T, ncol)
     end
 
@@ -158,9 +158,6 @@ function readBi4_Time(Bi4Files::Vector{String} = _dirFiles())
         close(ft)
     end
     return j
-end
-
-function readBi4_Info()
 end
 
 end #PostSPH
