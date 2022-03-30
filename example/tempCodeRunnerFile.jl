@@ -23,7 +23,7 @@ function SaveVTK_out(pos_array,idp_array,vel_array,rhop_array)
         )
 
         #Use 3d glyph filter in Paraview with 2d glyphs!
-        @time PostSPH.SaveVTK.write_vtp("SimData_" * lpad(string(i), 4, "0"), SimData)
+        PostSPH.SaveVTK.write_vtp("SimData_" * lpad(string(i), 4, "0"), SimData)
     end
 end
 
