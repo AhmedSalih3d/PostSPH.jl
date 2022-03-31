@@ -160,4 +160,83 @@ function readBi4_Time(Bi4Files::Vector{String} = _dirFiles())
     return j
 end
 
+function readBi4_Head()
+    Bi4Head = _dirFiles(Regex("Part_Head"))
+
+    file    = Bi4Head[1]
+
+    # Import a full bi4 file as Array{UInt8,1}
+    ft = open(file, read = true)
+    rf = read(ft)
+    close(ft)
+
+    # Start position is found by search the file for the key and finding
+    # first occurence, then adding offset
+    key      = codeunits("ITEM")
+    offset   = -1               #To start at "I" of "ITEM"
+
+    loc_val   = 1;
+    Item_Locs = Vector{Int64}()
+    while(true)
+        #+2 to jump up to the next search ITEM!
+        loc_val = Base._searchindex(rf, key, loc_val+2) + offset #1 byte offset
+        if loc_val == -1
+            break
+        else
+            push!(Item_Locs,loc_val)
+        end
+    end
+    popfirst!(Item_Locs) #Remove 1 info Item
+    popfirst!(Item_Locs) #Remove 2 info Item
+    push!(Item_Locs,length(rf)+1) #Add last range
+
+    Item_Ranges = Vector{UnitRange{Int64}}()
+    for i = 1:length(Item_Locs)-1
+        push!(Item_Ranges,Item_Locs[i]:(Item_Locs[i+1]-1))
+    end
+
+    
+    function searchValue(str2Search::Vector{UInt8},strNeedle::String,seekCounter::Int,OutputType::DataType)
+        loc_a = Base._searchindex(str2Search,codeunits(strNeedle),seekCounter)+ncodeunits(strNeedle)+sizeof(Int32)
+        loc_b = loc_a+(sizeof(Int32)-1)
+        range_ab = loc_a:loc_b
+
+        valR      = reinterpret(OutputType,str2Search[range_ab])
+
+        return valR
+    end
+
+    function searchType(str2Search::Vector{UInt8})
+        possibleTypes = ["Fixed";"Floating";"Fluid"]
+
+        for pT in possibleTypes
+            checkVal = Base._searchindex(str2Search,codeunits(pT),1)
+
+            if sign(checkVal) == 0
+                continue
+            else
+                return pT
+            end
+        end
+    end
+
+
+    for valRange in Item_Ranges
+        rf_ = rf[valRange]
+        Count = searchValue(rf_,"Count",1,Int32)
+        println(Count)
+
+        MkType = searchValue(rf_,"MkType",1,Int32)
+        println(MkType)
+
+        # Have to skip "MkBlocks" syntax..
+        Mk = searchValue(rf_,"Mk",20,Int32)
+        println(Mk)
+
+        ActualType_ = searchType(rf_)
+        println(ActualType_)
+    end
+
+end
+
 end #PostSPH
