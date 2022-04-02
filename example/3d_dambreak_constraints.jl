@@ -37,8 +37,23 @@ function SaveVTK_out(pos_array,idp_array,vel_array,rhop_array)
             Rhop   = rhop_array[i],
         )
 
+        function Constrain(ArrayToConstrain::AbstractArray,ConstraintArray::AbstractArray,ConstraintFunction::Function)
+            return ConstraintFunction.(ConstraintArray[ArrayToConstrain])
+        end
+
+        fx(x) = 0.2 <= x <= 1.3
+        fy(x) = 0.1 <= x <= 0.5
+        fz(x) = 0.1 <= x <= 0.2
+        fxc   = Constrain(Fluid_act_id,pos_array[i][1:3:end],fx)
+        fyc   = Constrain(Fluid_act_id,pos_array[i][2:3:end],fy)
+        fyz   = Constrain(Fluid_act_id,pos_array[i][3:3:end],fz)
+
+        fc_id = fxc .* fyc .* fyz
+
         #Use 3d glyph filter in Paraview with glyphs!
-        PostSPH.SaveVTK.write_vtp("SimData_FLUID_"  * lpad(string(i), 4, "0"), SimDataFluid,Fluid_act_id[ 0.25 .<  pos_array[i][2:3:end][Fluid_act_id] .< 0.5 .* (1 .<  pos_array[i][1:3:end][Fluid_act_id] .< 1.3)])
+        #PostSPH.SaveVTK.write_vtp("SimData_FLUID_"  * lpad(string(i), 4, "0"), SimDataFluid,Fluid_act_id[ 0.10 .<  pos_array[i][2:3:end][Fluid_act_id] .< 0.5 .* (0.2 .<  pos_array[i][1:3:end][Fluid_act_id] .< 1.3)])
+        #PostSPH.SaveVTK.write_vtp("SimData_COLUMN_" * lpad(string(i), 4, "0"), SimDataColumn,Column_act_id)
+        PostSPH.SaveVTK.write_vtp("SimData_FLUID_"  * lpad(string(i), 4, "0"), SimDataFluid,Fluid_act_id[fc_id])
         PostSPH.SaveVTK.write_vtp("SimData_COLUMN_" * lpad(string(i), 4, "0"), SimDataColumn,Column_act_id)
     end
 end
