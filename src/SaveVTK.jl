@@ -20,7 +20,7 @@ end
 
 Saves a polydata file (.vtp) given a filename, a 2xN point array and and 1xN attribute array.
 """
-function write_vtp(filename::String, sim_arr::SimData,act_id)
+function write_vtp(filename::String, sim_arr::SimData,act_id::UnitRange)
 
     x = @view sim_arr.Points[1:3:end][act_id]
     y = @view sim_arr.Points[2:3:end][act_id]

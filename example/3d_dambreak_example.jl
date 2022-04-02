@@ -1,4 +1,4 @@
-using PostSPH
+#using PostSPH
 
 # Load all data in
 cd(raw"C:\Users\Ahmed Salih\Documents\DualSPHysics_v5.0\examples\main\01_DamBreak\CaseDambreak_out\data")
@@ -20,8 +20,8 @@ function SaveVTK_out(pos_array,idp_array,vel_array,rhop_array)
     Base.Threads.@threads for i = 1:length(pos_array)
 
 
-        Fluid_act_id    = findall(Fluid_Ids["IdRangeJulia"][1]  .<= idp_array[i] .< Fluid_Ids["IdRangeJulia"][end])  #filter did not work?
-        Column_act_id   = findall(Column_Ids["IdRangeJulia"][1] .<= idp_array[i] .< Column_Ids["IdRangeJulia"][end]) #filter(x -> Column_Ids["IdRangeJulia"][1] <= x < Column_Ids["IdRangeJulia"][end], idp_array[i])
+        Fluid_act_id    = findall(Fluid_Ids["IdRangeJulia"][1]  .<= idp_array[i] .<= Fluid_Ids["IdRangeJulia"][end])  #filter did not work?
+        Column_act_id   = findall(Column_Ids["IdRangeJulia"][1] .<= idp_array[i] .<= Column_Ids["IdRangeJulia"][end]) #filter(x -> Column_Ids["IdRangeJulia"][1] <= x < Column_Ids["IdRangeJulia"][end], idp_array[i])
 
         SimDataFluid    = SaveVTK.SimData(
             Points = pos_array[i],

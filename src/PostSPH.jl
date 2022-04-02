@@ -234,7 +234,7 @@ function readBi4_Head()
 
         ActualType_ = searchType(rf_)
 
-        IdRange = (Bi4_IdCount+1):(Bi4_IdCount+Count) #+1 -> Julia Indexing
+        IdRange = (Bi4_IdCount+1):(Bi4_IdCount+Count-1) #+1 -1 -> Julia Indexing
         Bi4_IdCount += Count;
 
         dct[ival] = OrderedDict("Type"=>ActualType_,"MkType"=>MkType,"Mk"=>Mk, "Count"=>Count, "IdRangeJulia"=>IdRange,"IdRangeBi4"=>(IdRange).-1)
