@@ -39,18 +39,21 @@ function write_vtp(filename::String, sim_arr::SimData,act_id::AbstractArray)
     vtk = vtk_grid(filename, points, all_cells..., compress = true, append = false)
 
 
-    if !isempty(sim_arr.Idp)
-        vtk["Idp"] = sim_arr.Idp[act_id]
-    end
-    if !isempty(sim_arr.Vel)
-        vx = sim_arr.Vel[1:3:end][act_id]
-        vy = sim_arr.Vel[2:3:end][act_id]
-        vz = sim_arr.Vel[3:3:end][act_id]
-        velocity = hcat(vx, vy, vz)'
-        vtk["Velocity"] = velocity
-    end
-    if !isempty(sim_arr.Rhop)
-        vtk["Rhop"] = sim_arr.Rhop[act_id]
+    if isempty(act_id)
+    else
+        if !isempty(sim_arr.Idp)
+            vtk["Idp"] = sim_arr.Idp[act_id]
+        end
+        if !isempty(sim_arr.Vel)
+            vx = sim_arr.Vel[1:3:end][act_id]
+            vy = sim_arr.Vel[2:3:end][act_id]
+            vz = sim_arr.Vel[3:3:end][act_id]
+            velocity = hcat(vx, vy, vz)'
+            vtk["Velocity"] = velocity
+        end
+        if !isempty(sim_arr.Rhop)
+            vtk["Rhop"] = sim_arr.Rhop[act_id]
+        end
     end
 
     vtk_save(vtk)
