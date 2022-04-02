@@ -1,5 +1,7 @@
 __precompile__()
 
+using OrderedCollections
+
 module PostSPH
 
 #Add to project.toml manually: https://discourse.julialang.org/t/update-project-toml-manually/32477
@@ -45,7 +47,6 @@ const catTypeBi4   = Dict{Cat,DataType}(Idp => Int32, Points => Float32, Vel => 
 const catColBi4    = Dict{Cat,Int64}(Idp => 1, Points => 3, Vel => 3, Rhop => 1)
 
 ##Lists files in directory and only returns applicable files, ie. "Part_XXXX.bi4"
-# first_file bug
 function _dirFiles(rgxPat::Regex=Regex("Part_\\d{4}.bi4"))
     files = readdir()
     #Operation on dirFiles instantly
@@ -175,6 +176,7 @@ function readBi4_Head()
     key      = codeunits("ITEM")
     offset   = -1               #To start at "I" of "ITEM"
 
+    # Bad code
     loc_val   = 1;
     Item_Locs = Vector{Int64}()
     while(true)
@@ -186,8 +188,8 @@ function readBi4_Head()
             push!(Item_Locs,loc_val)
         end
     end
-    popfirst!(Item_Locs) #Remove 1 info Item
-    popfirst!(Item_Locs) #Remove 2 info Item
+    popfirst!(Item_Locs)          #Remove 1 info Item
+    popfirst!(Item_Locs)          #Remove 2 info Item
     push!(Item_Locs,length(rf)+1) #Add last range
 
     Item_Ranges = Vector{UnitRange{Int64}}()
@@ -201,7 +203,7 @@ function readBi4_Head()
         loc_b = loc_a+(sizeof(Int32)-1)
         range_ab = loc_a:loc_b
 
-        valR      = reinterpret(OutputType,str2Search[range_ab])
+        valR      = reinterpret(OutputType,str2Search[range_ab])[1]
 
         return valR
     end
@@ -220,22 +222,26 @@ function readBi4_Head()
         end
     end
 
-
-    for valRange in Item_Ranges
+    Bi4_IdCount = 0
+    dct = Vector{OrderedDict}(undef,length(Item_Ranges))
+    for (ival,valRange) in enumerate(Item_Ranges)
         rf_ = rf[valRange]
         Count = searchValue(rf_,"Count",1,Int32)
-        println(Count)
 
         MkType = searchValue(rf_,"MkType",1,Int32)
-        println(MkType)
 
         # Have to skip "MkBlocks" syntax..
         Mk = searchValue(rf_,"Mk",20,Int32)
-        println(Mk)
 
         ActualType_ = searchType(rf_)
-        println(ActualType_)
+
+        IdRange = (Bi4_IdCount+1):(Bi4_IdCount+Count) #+1 -> Julia Indexing
+        Bi4_IdCount += Count;
+
+        dct[ival] = OrderedDict("Type"=>ActualType_,"MkType"=>MkType,"Mk"=>Mk, "Count"=>Count, "IdRangeJulia"=>IdRange,"IdRangeBi4"=>(IdRange).-1)
     end
+
+    return dct
 
 end
 
