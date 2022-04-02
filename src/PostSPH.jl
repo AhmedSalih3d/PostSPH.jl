@@ -1,8 +1,7 @@
 __precompile__()
 
-using OrderedCollections
-
 module PostSPH
+using OrderedCollections
 
 #Add to project.toml manually: https://discourse.julialang.org/t/update-project-toml-manually/32477
 include("SaveVTK.jl")
