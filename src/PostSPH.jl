@@ -6,7 +6,7 @@ module PostSPH
 include("SaveVTK.jl")
 
 export Cat,
-    readBi4Array, readBi4_NumberOfParticles, readBi4_CurrentTotalParticles, readBi4_Time
+    readBi4Array, readBi4_NumberOfParticles, readBi4_CurrentTotalParticles, readBi4_Time, readBi4_Head
 
 ##Hardcoded enum - Cat is "category"
 """
