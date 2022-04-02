@@ -4,7 +4,8 @@ module PostSPH
 using OrderedCollections
 
 #Add to project.toml manually: https://discourse.julialang.org/t/update-project-toml-manually/32477
-include("SaveVTK.jl")
+include("./SaveVTK.jl")
+using .SaveVTK
 
 export Cat,
     readBi4Array, readBi4_NumberOfParticles, readBi4_CurrentTotalParticles, readBi4_Time, readBi4_Head
