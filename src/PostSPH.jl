@@ -26,19 +26,19 @@ end
 const varNames = (:key, :offset)
 
 const IdpSearch = transcode(UInt8, "ARRAY\x03\0\0\0Idp")[:]
-const IdpOffset = 11
+const IdpOffset = length(IdpSearch)-1 #11
 const IdpKey = NamedTuple{varNames}([IdpSearch, IdpOffset])
 
 const PosSearch = transcode(UInt8, "ARRAY\x03\0\0\0Pos")[:]
-const PosOffset = 11
+const PosOffset = length(PosSearch)-1 #11
 const PosKey = NamedTuple{varNames}([PosSearch, PosOffset])
 
 const VelSearch = transcode(UInt8, "ARRAY\x03\0\0\0Vel")[:]
-const VelOffset = 11
+const VelOffset = length(VelSearch)-1 #11
 const VelKey = NamedTuple{varNames}([VelSearch, VelOffset])
 
 const RhopSearch = transcode(UInt8, "ARRAY\x04\0\0\0Rhop")[:]
-const RhopOffset = 12
+const RhopOffset = length(RhopSearch)-1 #12
 const RhopKey = NamedTuple{varNames}([RhopSearch, RhopOffset])
 
 const searchKeyBi4 = Dict{Cat,NamedTuple}(Idp => IdpKey, Points => PosKey, Vel => VelKey, Rhop => RhopKey)
