@@ -51,8 +51,8 @@ function SaveVTK_out(pos_array,idp_array,vel_array,rhop_array)
         fc_id = fxc .* fyc
 
         #Use 3d glyph filter in Paraview with glyphs!
-        PostSPH.SaveVTK.write_vtp("SimData_FLUID_"  * lpad(string(i), 4, "0"), SimDataFluid,Fluid_act_id[fc_id])
-        PostSPH.SaveVTK.write_vtp("SimData_COLUMN_" * lpad(string(i), 4, "0"), SimDataColumn,Column_act_id)
+        PostSPH.SaveVTK.write_vtp(raw"C:\Users\Ahmed Salih\Documents\DualSPHysics_v5.0\examples\main\01_DamBreak\CaseDambreak_out\particles_vtp\SimData_FLUID_"  * lpad(string(i), 4, "0"), SimDataFluid,Fluid_act_id[fc_id])
+        PostSPH.SaveVTK.write_vtp(raw"C:\Users\Ahmed Salih\Documents\DualSPHysics_v5.0\examples\main\01_DamBreak\CaseDambreak_out\particles_vtp\SimData_COLUMN_" * lpad(string(i), 4, "0"), SimDataColumn,Column_act_id)
     end
 end
 
