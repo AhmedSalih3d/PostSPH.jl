@@ -26,7 +26,7 @@ end
 const varNames = NamedTuple{(:key,:offset,:type,:ncol), Tuple{Vector{UInt8},Int,DataType,Int}}
 _Bi4DataTypeDict             = Dict{Bi4DataType,varNames}()
 _Bi4DataTypeDict[Points]     = (key = transcode(UInt8, "ARRAY\x03\0\0\0Pos")[:]  , offset = 11, type = Float32   , ncol   = 3 )
-_Bi4DataTypeDict[Points_F64] = (key = transcode(UInt8, "ARRAY\x03\0\0\0Posd")[:] , offset = 12, type = Float64   , ncol   = 3 )
+_Bi4DataTypeDict[Points_F64] = (key = transcode(UInt8, "ARRAY\x04\0\0\0Posd")[:] , offset = 12, type = Float64   , ncol   = 3 )
 _Bi4DataTypeDict[Idp]        = (key = transcode(UInt8, "ARRAY\x03\0\0\0Idp")[:]  , offset = 11, type = Int32     , ncol   = 1 )
 _Bi4DataTypeDict[Vel]        = (key = transcode(UInt8, "ARRAY\x03\0\0\0Vel")[:]  , offset = 11, type = Float32   , ncol   = 3 )
 _Bi4DataTypeDict[Rhop]       = (key = transcode(UInt8, "ARRAY\x04\0\0\0Rhop")[:] , offset = 12, type = Float32   , ncol   = 1 )
