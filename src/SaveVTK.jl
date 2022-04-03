@@ -8,11 +8,11 @@ export write_vtp
 """
     Struct to hold simulation data
 """
-@with_kw mutable struct SimData{T,N}
+@with_kw mutable struct SimData{T,M,N}
     Points::Vector{T}
-    Idp::Vector{N}
-    Vel::Vector{T}
-    Rhop::Vector{T}
+    Idp::Vector{M}
+    Vel::Vector{N}
+    Rhop::Vector{N}
 end
 
 """
