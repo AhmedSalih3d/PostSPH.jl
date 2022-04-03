@@ -156,23 +156,20 @@ function readBi4_Head()
     rf = read(ft)
     close(ft)
 
-    # Start position is found by search the file for the key and finding
-    # first occurence, then adding offset
-    key      = codeunits("ITEM")
-    offset   = -1               #To start at "I" of "ITEM"
-
-    # Bad code
-    loc_val   = 1;
-    Item_Locs = Vector{Int64}()
-    while(true)
-        #+2 to jump up to the next search ITEM!
-        loc_val = Base._searchindex(rf, key, loc_val+2) + offset #1 byte offset
-        if loc_val == -1
+    Needle        = "ITEM"
+    SearchNeedle  = codeunits(Needle)
+    
+    Item_Locs     = Vecto{Int64}()
+    ind        = 0
+    
+    while true
+        ind  = Base._searchindex(rf, SearchNeedle, ind+1)
+        if ind == 0
             break
-        else
-            push!(Item_Locs,loc_val)
         end
+        push!(Item_Locs,ind)
     end
+
     popfirst!(Item_Locs)          #Remove 1 info Item
     popfirst!(Item_Locs)          #Remove 2 info Item
     push!(Item_Locs,length(rf)+1) #Add last range
