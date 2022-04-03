@@ -43,7 +43,7 @@ function SaveVTK_out(pos_array,idp_array,vel_array,rhop_array)
             return ConstraintFunction.(ConstraintArray[ArrayToConstrain])
         end
 
-        fx(x) = 0.7 <= x <= 1.3
+        fx(x) = 0.2 <= x <= 1.3
         fy(x) = 0.1 <= x <= 0.5
         fxc   = Constrain(Fluid_act_id,pos_array[i][1:3:end],fx)
         fyc   = Constrain(Fluid_act_id,pos_array[i][2:3:end],fy)

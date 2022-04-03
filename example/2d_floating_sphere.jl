@@ -12,7 +12,7 @@ Npok = readBi4_CurrentTotalParticles()
 TypeOfParticle, NValues = readBi4_NumberOfParticles()
 NTime = readBi4_Time()
 
-Fluid_Ids  = readBi4_Head()[4]
+Fluid_Ids  = readBi4_Head()[3]
 Column_Ids = readBi4_Head()[2]
 
 # Save to vtk
@@ -37,22 +37,9 @@ function SaveVTK_out(pos_array,idp_array,vel_array,rhop_array)
             Rhop   = rhop_array[i],
         )
 
-        # Bit difficult to comprehend, but it broadcasts a constraint function, on a parameter (constraint array) to determine how to
-        # constrain a selected array
-        function Constrain(ArrayToConstrain::AbstractArray,ConstraintArray::AbstractArray,ConstraintFunction::Function)
-            return ConstraintFunction.(ConstraintArray[ArrayToConstrain])
-        end
-
-        fx(x) = 0.7 <= x <= 1.3
-        fy(x) = 0.1 <= x <= 0.5
-        fxc   = Constrain(Fluid_act_id,pos_array[i][1:3:end],fx)
-        fyc   = Constrain(Fluid_act_id,pos_array[i][2:3:end],fy)
-
-        fc_id = fxc .* fyc
-
         #Use 3d glyph filter in Paraview with glyphs!
-        PostSPH.SaveVTK.write_vtp("SimData_FLUID_"  * lpad(string(i), 4, "0"), SimDataFluid,Fluid_act_id[fc_id])
-        PostSPH.SaveVTK.write_vtp("SimData_COLUMN_" * lpad(string(i), 4, "0"), SimDataColumn,Column_act_id)
+        PostSPH.SaveVTK.write_vtp("SimData_FLUID_"  * lpad(string(i), 4, "0"), SimDataFluid,Fluid_act_id)
+        PostSPH.SaveVTK.write_vtp("SimData_SPHERE_" * lpad(string(i), 4, "0"), SimDataColumn,Column_act_id)
     end
 end
 
