@@ -6,14 +6,13 @@ using OrderedCollections
 #Add to project.toml manually: https://discourse.julialang.org/t/update-project-toml-manually/32477
 include("./SaveVTK.jl")
 
-export Cat,
+export Bi4DataType,
     readBi4Array, readBi4_NumberOfParticles, readBi4_CurrentTotalParticles, readBi4_Time, readBi4_Head
 
-##Hardcoded enum - Cat is "category"
 """
-    Cat are hardcoded enums to specify the potential arrays extractable from bi4 files.
+    Bi4DataType are hardcoded enums to specify the potential arrays extractable from bi4 files.
 """
-@enum Cat begin
+@enum Bi4DataType begin
     Points
     Idp
     Vel
@@ -22,28 +21,15 @@ end
 
 ##Read from binary files directly
 
-## Make two dicts,   one for the enum -> string and one for the data type - Bi4 specific
-const varNames = (:key, :offset)
+## Final Dict
+const varNames = NamedTuple{(:key,:offset,:type,:ncol), Tuple{Vector{UInt8},Int,DataType,Int}}
+_Bi4DataTypeDict         = Dict{Bi4DataType,varNames}()
+_Bi4DataTypeDict[Points] = (key = transcode(UInt8, "ARRAY\x03\0\0\0Pos")[:]  , offset = 11, type = Float32   , ncol   = 3 )
+_Bi4DataTypeDict[Idp]    = (key = transcode(UInt8, "ARRAY\x03\0\0\0Idp")[:]  , offset = 11, type = Int32     , ncol   = 1 )
+_Bi4DataTypeDict[Vel]    = (key = transcode(UInt8, "ARRAY\x03\0\0\0Vel")[:]  , offset = 11, type = Float32   , ncol   = 3 )
+_Bi4DataTypeDict[Rhop]   = (key = transcode(UInt8, "ARRAY\x04\0\0\0Rhop")[:] , offset = 12, type = Float32   , ncol   = 1 )
+const Bi4DataTypeDict    = deepcopy(_Bi4DataTypeDict)
 
-const IdpSearch = transcode(UInt8, "ARRAY\x03\0\0\0Idp")[:]
-const IdpOffset = length(IdpSearch)-1 #11
-const IdpKey = NamedTuple{varNames}([IdpSearch, IdpOffset])
-
-const PosSearch = transcode(UInt8, "ARRAY\x03\0\0\0Pos")[:]
-const PosOffset = length(PosSearch)-1 #11
-const PosKey = NamedTuple{varNames}([PosSearch, PosOffset])
-
-const VelSearch = transcode(UInt8, "ARRAY\x03\0\0\0Vel")[:]
-const VelOffset = length(VelSearch)-1 #11
-const VelKey = NamedTuple{varNames}([VelSearch, VelOffset])
-
-const RhopSearch = transcode(UInt8, "ARRAY\x04\0\0\0Rhop")[:]
-const RhopOffset = length(RhopSearch)-1 #12
-const RhopKey = NamedTuple{varNames}([RhopSearch, RhopOffset])
-
-const searchKeyBi4 = Dict{Cat,NamedTuple}(Idp => IdpKey, Points => PosKey, Vel => VelKey, Rhop => RhopKey)
-const catTypeBi4   = Dict{Cat,DataType}(Idp => Int32, Points => Float32, Vel => Float32, Rhop => Float32)
-const catColBi4    = Dict{Cat,Int64}(Idp => 1, Points => 3, Vel => 3, Rhop => 1)
 
 ##Lists files in directory and only returns applicable files, ie. "Part_XXXX.bi4"
 function _dirFiles(rgxPat::Regex=Regex("Part_\\d{4}.bi4"))
@@ -54,13 +40,13 @@ function _dirFiles(rgxPat::Regex=Regex("Part_\\d{4}.bi4"))
 end
 
 
-readBi4Array(typ::Cat, Bi4Files::String) = readBi4Array(typ, [Bi4Files])
-function readBi4Array(typ::Cat, Bi4Files::Vector{String} = _dirFiles())
+readBi4Array(typ::Bi4DataType, Bi4Files::String) = readBi4Array(typ, [Bi4Files])
+function readBi4Array(typ::Bi4DataType, Bi4Files::Vector{String} = _dirFiles())
 
-    key    = searchKeyBi4[typ].key
-    offset = searchKeyBi4[typ].offset
-    T      = catTypeBi4[typ]
-    ncol   = catColBi4[typ]
+    key    = Bi4DataTypeDict[typ].key
+    offset = Bi4DataTypeDict[typ].offset
+    T      = Bi4DataTypeDict[typ].type
+    ncol   = Bi4DataTypeDict[typ].ncol
    
     j  = similar(Vector{Vector{T}},axes(Bi4Files))
 
