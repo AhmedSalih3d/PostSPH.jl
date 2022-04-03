@@ -149,6 +149,18 @@ function readBi4_Time(Bi4Files::Vector{String} = _dirFiles())
     return j
 end
 
+#
+function _searchValue(str2Search::Vector{UInt8},strNeedle::String,seekCounter::Int,OutputType::DataType)
+    loc_a = Base._searchindex(str2Search,codeunits(strNeedle),seekCounter)+ncodeunits(strNeedle)+sizeof(Int32)
+    loc_b = loc_a+(sizeof(Int32)-1)
+    range_ab = loc_a:loc_b
+
+    valR      = reinterpret(OutputType,str2Search[range_ab])[1]
+
+    return valR
+end
+
+
 function readBi4_Head()
     Bi4Head = _dirFiles(Regex("Part_Head"))
 
@@ -182,17 +194,6 @@ function readBi4_Head()
         push!(Item_Ranges,Item_Locs[i]:(Item_Locs[i+1]-1))
     end
 
-    
-    function searchValue(str2Search::Vector{UInt8},strNeedle::String,seekCounter::Int,OutputType::DataType)
-        loc_a = Base._searchindex(str2Search,codeunits(strNeedle),seekCounter)+ncodeunits(strNeedle)+sizeof(Int32)
-        loc_b = loc_a+(sizeof(Int32)-1)
-        range_ab = loc_a:loc_b
-
-        valR      = reinterpret(OutputType,str2Search[range_ab])[1]
-
-        return valR
-    end
-
     function searchType(str2Search::Vector{UInt8})
         possibleTypes = ["Fixed";"Floating";"Fluid"]
 
@@ -211,12 +212,12 @@ function readBi4_Head()
     dct = Vector{OrderedDict}(undef,length(Item_Ranges))
     for (ival,valRange) in enumerate(Item_Ranges)
         rf_ = rf[valRange]
-        Count = searchValue(rf_,"Count",1,Int32)
+        Count =  _searchValue(rf_,"Count",1,Int32)
 
-        MkType = searchValue(rf_,"MkType",1,Int32)
+        MkType = _searchValue(rf_,"MkType",1,Int32)
 
         # Have to skip "MkBlocks" syntax..
-        Mk = searchValue(rf_,"Mk",20,Int32)
+        Mk = _searchValue(rf_,"Mk",20,Int32)
 
         ActualType_ = searchType(rf_)
 
@@ -228,6 +229,48 @@ function readBi4_Head()
 
     return dct
 
+end
+
+function readBi4_Info()
+    Bi4Info = _dirFiles(Regex("PartInfo"))
+
+    file    = Bi4Info[1]
+
+    # Import a full bi4 file as Array{UInt8,1}
+    ft = open(file, read = true)
+    rf = read(ft)
+    close(ft)
+
+    Needle        = "ITEM"
+    SearchNeedle  = codeunits(Needle)
+    
+    Item_Locs     = Vector{Int64}()
+    ind           = 0
+    
+    while true
+        ind  = Base._searchindex(rf, SearchNeedle, ind+1)
+        if ind == 0
+            break
+        end
+        push!(Item_Locs,ind)
+    end
+
+    popfirst!(Item_Locs)          #Remove 1 info Item
+    push!(Item_Locs,length(rf)+1) #Add last range
+
+    Item_Ranges = Vector{UnitRange{Int64}}()
+    for i = 1:length(Item_Locs)-1
+        push!(Item_Ranges,Item_Locs[i]:(Item_Locs[i+1]-1))
+    end
+
+    dct = Vector{OrderedDict}(undef,length(Item_Ranges))
+    for (ival,valRange) in enumerate(Item_Ranges)
+        rf_  = rf[valRange]
+        Npok =  _searchValue(rf_,"Npok",1,Int32)
+        dct[ival] = OrderedDict("Npok"=>Npok)
+    end
+
+    return dct
 end
 
 end #PostSPH
