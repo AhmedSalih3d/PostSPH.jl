@@ -80,11 +80,12 @@ function _readBi4(file::String, key::Vector{UInt8}, offset::Int, T::DataType, nc
     n = reinterpret(Int32, rf[nid_s:nid_e])[1]
 
     #data id start
-    # Multiply with 4 here since UInt8 size, times number of particles, times
+    # Multiply with 4 (sizeof(Float32)) here since UInt8 size, times number of particles, times
     # times number of columns gives the correct indices in the rf array for
     # Float32, Int32 etc.
     did_s = nid_e + 1 + sizeof(Int32)
-    did_e = did_s - 1 + 4 * n * ncol
+    did_e = did_s - 1 + sizeof(T) * n * ncol
+    
 
     # Reinterpret the data as the specified data type, extract the relevant
     # snip of Array{UInt8,1} in "rf"
