@@ -159,7 +159,7 @@ function readBi4_Head()
     Needle        = "ITEM"
     SearchNeedle  = codeunits(Needle)
     
-    Item_Locs     = Vecto{Int64}()
+    Item_Locs     = Vector{Int64}()
     ind        = 0
     
     while true
