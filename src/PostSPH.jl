@@ -2,6 +2,7 @@ __precompile__()
 
 module PostSPH
 using OrderedCollections
+using Printf
 
 #Add to project.toml manually: https://discourse.julialang.org/t/update-project-toml-manually/32477
 include("./SaveVTK.jl")
@@ -150,14 +151,79 @@ function readBi4_Time(Bi4Files::Vector{String} = _dirFiles())
 end
 
 #
-function _searchValue(str2Search::Vector{UInt8},strNeedle::String,seekCounter::Int,OutputType::DataType)
-    loc_a = Base._searchindex(str2Search,codeunits(strNeedle),seekCounter)+ncodeunits(strNeedle) + 4 
-    loc_b = loc_a+(sizeof(OutputType)-1)
+function _searchValue(str2Search::Vector{UInt8},strNeedle::String,seekCounter::Int,OutputType::DataType,nOutputs::Int=1)
+    # Add Control Characters
+    possibleControlCharacters = ["\f";"\v";"\b";"\x02";"\x16";"\x17"] #Use Char('\f') to see UInt8 value! https://www.rapidtables.com/code/text/ascii-table.html
+
+    strNeedle_CC = "";
+    hitIndex     = -1;
+    for pCC in possibleControlCharacters
+        strNeedle_CC = "\0"*strNeedle*pCC
+        hitIndex     = Base._searchindex(str2Search,codeunits(strNeedle_CC),seekCounter)
+        if hitIndex != 0
+            break
+        end
+    end
+    
+    if hitIndex == 0
+        @printf "StringNeedle: %s, was not found in file.\n" strNeedle
+        return nothing
+    end
+
+    loc_a = hitIndex+ncodeunits(strNeedle_CC)+3 #+3 instead of +4 since we added one char in front of strNeedle!
+    loc_b = loc_a+(nOutputs*sizeof(OutputType)-1)
     range_ab = loc_a:loc_b
 
-    valR      = reinterpret(OutputType,str2Search[range_ab])[1]
+    valR      = reinterpret(OutputType,str2Search[range_ab])
 
-    return valR
+    if nOutputs == 1
+        return valR[1]
+    else
+        return valR
+    end
+end
+
+function readBi4_Head_Config()
+    Bi4Head = _dirFiles(Regex("Part_Head"))
+
+    file    = Bi4Head[1]
+
+    # Import a full bi4 file as Array{UInt8,1}
+    ft = open(file, read = true)
+    rf = read(ft)
+    close(ft)
+
+    searchVar =
+        Dict("ViscoType"=>(1,UInt32),
+             "ViscoValue"=>(1,Float32),
+             "ViscoBoundFactor"=>(1,Float32),
+             "Splitting"=>(1,UInt8),
+             "Dp"=>(1,Float64),
+             "H"=>(1,Float64),
+             "B"=>(1,Float64),
+             "RhopZero"=>(1,Float64),
+             "MassBound"=>(1,Float64),
+             "MassFluid"=>(1,Float64),
+             "Gamma"=>(1,Float64),
+             "Gravity"=>(3,Float32),
+             "CasePosMin"=>(3,Float64),
+             "CasePosMax"=>(3,Float64),
+        )
+
+    for (sV,sT) in searchVar
+        n = first(sT)
+        t = last(sT)
+        if n == 1
+            a =  _searchValue(rf,sV,1,t)
+            if a != nothing
+            @printf "%s: %2.6f |%s|\n" sV a t
+            end
+        elseif n == 3
+            a =  _searchValue(rf,sV,1,t,n)
+            @printf "%s: %2.6f %2.6f %2.6f |%s|\n" sV a[1] a[2] a[3] t
+        end
+    end
+
 end
 
 
@@ -216,15 +282,15 @@ function readBi4_Head()
 
         MkType = _searchValue(rf_,"MkType",1,Int32)
 
-        # Have to skip "MkBlocks" syntax..
-        Mk = _searchValue(rf_,"Mk",20,Int32)
+        # Have to skip "MkBlocks" syntax.. Actually fixed now, since using control characters in _searchValue!
+        Mk = _searchValue(rf_,"Mk",1,Int32)
 
         ActualType_ = searchType(rf_)
 
-        IdRange = (Bi4_IdCount+1):(Bi4_IdCount+Count-1) #+1 -1 -> Julia Indexing
-        Bi4_IdCount += Count;
 
-        dct[ival] = OrderedDict("Type"=>ActualType_,"MkType"=>MkType,"Mk"=>Mk, "Count"=>Count, "IdRangeJulia"=>IdRange,"IdRangeBi4"=>(IdRange).-1)
+        dct[ival] = OrderedDict("Type"=>ActualType_,"MkType"=>MkType,"Mk"=>Mk,"Begin"=>Bi4_IdCount, "Count"=>Count)
+
+        Bi4_IdCount += Count;
     end
 
     return dct
