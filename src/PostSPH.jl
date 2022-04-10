@@ -151,8 +151,8 @@ end
 
 #
 function _searchValue(str2Search::Vector{UInt8},strNeedle::String,seekCounter::Int,OutputType::DataType)
-    loc_a = Base._searchindex(str2Search,codeunits(strNeedle),seekCounter)+ncodeunits(strNeedle)+sizeof(Int32)
-    loc_b = loc_a+(sizeof(Int32)-1)
+    loc_a = Base._searchindex(str2Search,codeunits(strNeedle),seekCounter)+ncodeunits(strNeedle) + 4 
+    loc_b = loc_a+(sizeof(OutputType)-1)
     range_ab = loc_a:loc_b
 
     valR      = reinterpret(OutputType,str2Search[range_ab])[1]
@@ -231,6 +231,7 @@ function readBi4_Head()
 
 end
 
+# Not advised to use yet
 function readBi4_Info()
     Bi4Info = _dirFiles(Regex("PartInfo"))
 
@@ -267,7 +268,14 @@ function readBi4_Info()
     for (ival,valRange) in enumerate(Item_Ranges)
         rf_  = rf[valRange]
         Npok =  _searchValue(rf_,"Npok",1,Int32)
-        dct[ival] = OrderedDict("Npok"=>Npok)
+        Nout =  _searchValue(rf_,"Nout",1,Int32)
+        Nptotal =  _searchValue(rf_,"Nptotal",1,Int32)
+        RunTime =  _searchValue(rf_,"RunTime",1,Float64)
+        TimeSim =  _searchValue(rf_,"timesim",1,Float64)
+        TimeStep = _searchValue(rf_,"TimeStep",1,Float64)
+        Step = _searchValue(rf_,"Step",1,Int32) #Wrong results, since it finds "TimeStep too"..
+
+        dct[ival] = OrderedDict("Npok"=>Npok,"Nout"=>Nout,"Nptotal"=>Nptotal,"RunTime"=>RunTime,"timesim"=>TimeSim,"TimeStep"=>TimeStep,"Step"=>Step)
     end
 
     return dct
