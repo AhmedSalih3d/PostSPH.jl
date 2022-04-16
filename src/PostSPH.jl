@@ -183,6 +183,7 @@ function _searchValue(str2Search::Vector{UInt8},strNeedle::String,seekCounter::I
     end
 end
 
+# Cannot read text yet
 function readBi4_Head_Config()
     Bi4Head = _dirFiles(Regex("Part_Head"))
 
@@ -208,6 +209,13 @@ function readBi4_Head_Config()
              "Gravity"=>(3,Float32),
              "CasePosMin"=>(3,Float64),
              "CasePosMax"=>(3,Float64),
+             "PeriXinc"=>(3,Float64),
+             "PeriYinc"=>(3,Float64),
+             "PeriZinc"=>(3,Float64),
+             "Data2d"=>(1,UInt8),
+             "Data2dPosY"=>(1,Float64),
+             "Npiece"=>(1,UInt32),
+             "FirstPart"=>(1,UInt32),
         )
 
     for (sV,sT) in searchVar
@@ -215,9 +223,7 @@ function readBi4_Head_Config()
         t = last(sT)
         if n == 1
             a =  _searchValue(rf,sV,1,t)
-            if a != nothing
             @printf "%s: %2.6f |%s|\n" sV a t
-            end
         elseif n == 3
             a =  _searchValue(rf,sV,1,t,n)
             @printf "%s: %2.6f %2.6f %2.6f |%s|\n" sV a[1] a[2] a[3] t
