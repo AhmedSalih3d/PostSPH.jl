@@ -183,7 +183,7 @@ function _searchValue(str2Search::Vector{UInt8},strNeedle::String,seekCounter::I
     end
 end
 
-# Cannot read text yet
+# Cannot read text yet, not advised to use yet
 function readBi4_Head_Config()
     Bi4Head = _dirFiles(Regex("Part_Head"))
 
