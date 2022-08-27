@@ -35,8 +35,8 @@ const Bi4DataTypeDict        = deepcopy(_Bi4DataTypeDict)
 
 
 ##Lists files in directory and only returns applicable files, ie. "Part_XXXX.bi4"
-function _dirFiles(rgxPat::Regex=Regex("Part_\\d{4}.bi4"))
-    files = readdir()
+function _dirFiles(path::String=".",rgxPat::Regex=Regex("Part_\\d{4}.bi4"))
+    files = readdir(path)
     #Operation on dirFiles instantly
     filter!(x -> occursin(rgxPat, x), files)
     return files
