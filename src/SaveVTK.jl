@@ -1,8 +1,6 @@
 module SaveVTK
 
-using StaticArrays
 using WriteVTK
-using Random
 using Parameters
 
 export write_vtp
@@ -10,11 +8,11 @@ export write_vtp
 """
     Struct to hold simulation data
 """
-@with_kw mutable struct SimData
-    Points::Any#::Array{Float32,1} = Array{Float32}(undef, 0)
-    Idp::Any#::Array{Int32,1} = Array{Int32,1}()
-    Vel::Any#::Array{Float32,1} = Array{Float32}(undef, 0)
-    Rhop::Any#::Array{Float32,1} = Array{Float32,1}()
+@with_kw mutable struct SimData{T,M,N}
+    Points::Vector{T}
+    Idp::Vector{M}
+    Vel::Vector{N}
+    Rhop::Vector{N}
 end
 
 """
@@ -22,11 +20,11 @@ end
 
 Saves a polydata file (.vtp) given a filename, a 2xN point array and and 1xN attribute array.
 """
-function write_vtp(filename::String, sim_arr::SimData)
+function write_vtp(filename::String, sim_arr::SimData,act_id::AbstractArray)
 
-    x = sim_arr.Points[1:3:end]
-    y = sim_arr.Points[2:3:end]
-    z = sim_arr.Points[3:3:end]
+    x = @view sim_arr.Points[1:3:end][act_id]
+    y = @view sim_arr.Points[2:3:end][act_id]
+    z = @view sim_arr.Points[3:3:end][act_id]
 
     points = hcat(x, y, z)'
 
@@ -41,18 +39,21 @@ function write_vtp(filename::String, sim_arr::SimData)
     vtk = vtk_grid(filename, points, all_cells..., compress = true, append = false)
 
 
-    if !isempty(sim_arr.Idp)
-        vtk["Idp"] = sim_arr.Idp
-    end
-    if !isempty(sim_arr.Vel)
-        vx = sim_arr.Vel[1:3:end]
-        vy = sim_arr.Vel[2:3:end]
-        vz = sim_arr.Vel[3:3:end]
-        velocity = hcat(vx, vy, vz)'
-        vtk["Velocity"] = velocity
-    end
-    if !isempty(sim_arr.Rhop)
-        vtk["Rhop"] = sim_arr.Rhop
+    if isempty(act_id)
+    else
+        if !isempty(sim_arr.Idp)
+            vtk["Idp"] = sim_arr.Idp[act_id]
+        end
+        if !isempty(sim_arr.Vel)
+            vx = sim_arr.Vel[1:3:end][act_id]
+            vy = sim_arr.Vel[2:3:end][act_id]
+            vz = sim_arr.Vel[3:3:end][act_id]
+            velocity = hcat(vx, vy, vz)'
+            vtk["Velocity"] = velocity
+        end
+        if !isempty(sim_arr.Rhop)
+            vtk["Rhop"] = sim_arr.Rhop[act_id]
+        end
     end
 
     vtk_save(vtk)
