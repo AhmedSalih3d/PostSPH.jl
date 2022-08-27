@@ -21,7 +21,7 @@ function SaveVTK_out(pos_array,idp_array,vel_array,rhop_array)
 
 
         Fluid_act_id    = findall(Fluid_Ids["Begin"] .<= idp_array[i] .<=  Fluid_Ids["Begin"] +  Fluid_Ids["Count"]-1)  
-        Column_act_id   = findall(Column_Ids["Begin"] .<= idp_array[i] .<= Column_Ids["Begin"]+ Column_Ids["Count"]-1) #Column_Ids["IdRangeJulia"] .+ 1
+        Column_act_id   = findall(Column_Ids["Begin"] .<= idp_array[i] .<= Column_Ids["Begin"]+ Column_Ids["Count"]-1)
 
         SimDataFluid    = PostSPH.SaveVTK.SimData(
             Points = pos_array[i],
