@@ -233,8 +233,8 @@ function readBi4_Head_Config()
 end
 
 
-function readBi4_Head()
-    Bi4Head = _dirFiles(Regex("Part_Head"))
+function readBi4_Head(path::String=".")
+    Bi4Head = _dirFiles(path,Regex("Part_Head"))
 
     file    = Bi4Head[1]
 
