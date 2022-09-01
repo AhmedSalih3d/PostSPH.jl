@@ -239,7 +239,7 @@ function readBi4_Head(path::String=".")
     file    = Bi4Head[1]
 
     # Import a full bi4 file as Array{UInt8,1}
-    ft = open(file, read = true)
+    ft = open(joinpath(path,file), read = true)
     rf = read(ft)
     close(ft)
 
