@@ -153,7 +153,7 @@ end
 #
 function _searchValue(str2Search::Vector{UInt8},strNeedle::String,seekCounter::Int,OutputType::DataType,nOutputs::Int=1)
     # Add Control Characters
-    possibleControlCharacters = ["\f";"\v";"\b";"\x02";"\x16";"\x17"] #Use Char('\f') to see UInt8 value! https://www.rapidtables.com/code/text/ascii-table.html
+    possibleControlCharacters = ["\f";"\v";"\b";"\x02";"\x16";"\x17"]
 
     strNeedle_CC = "";
     hitIndex     = -1;
